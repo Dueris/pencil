@@ -2,7 +2,10 @@ import io.papermc.paperweight.tasks.RemapJar
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.org.apache.commons.lang3.time.StopWatch
+import java.io.BufferedReader
 import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Paths
@@ -129,9 +132,56 @@ tasks.create("genSource") {
         println()
         println("Finished decompile in ${stopWatch.elapsedTime} ms")
         buildSourceRepo()
+        // defineSource()
 
+        getSubmoduleCommits("Pencil-Server").forEach { println(it) }
         println("Patches applied successfully")
     }
+}
+
+fun defineSource() {
+    val addCommand = listOf("git", "add", ".")
+    runCommand(addCommand, File("Pencil-Server"))
+
+    val commitCommand = listOf("git", "commit", "-m", "\"Initial Source\"")
+    runCommand(commitCommand, File("Pencil-Server"))
+
+    println("Source definition made, ready to apply git patches.")
+}
+
+fun runCommand(command: List<String>, workingDir: File): String {
+    return try {
+        val process = ProcessBuilder(command)
+            .directory(workingDir)
+            .redirectErrorStream(true)
+            .start()
+
+        val result = process.inputStream.bufferedReader().use { it.readText() }
+        process.waitFor()
+        result
+    } catch (e: IOException) {
+        e.printStackTrace()
+        "Error running command: ${e.message}"
+    }
+}
+
+fun getSubmoduleCommits(submodulePath: String): List<String> {
+    // Change to the submodule directory
+    val processBuilder = ProcessBuilder("git", "-C", submodulePath, "log", "--oneline")
+    val process = processBuilder.start()
+
+    val result = mutableListOf<String>()
+    BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
+        var line = reader.readLine()
+        while (line != null) {
+            result.add(line)
+            line = reader.readLine()
+        }
+    }
+
+    process.waitFor()
+
+    return result
 }
 
 fun downloadFileFromUrl(fileUrl: String, destinationPath: String) {
