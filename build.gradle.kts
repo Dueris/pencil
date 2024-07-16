@@ -17,7 +17,7 @@ val DECOMPILER_VERSION = "1.10.1"
 
 plugins {
     id("java")
-    id("io.papermc.paperweight.core") version "1.7.1" apply true
+    id("io.papermc.paperweight.core") version "1.7.2-SNAPSHOT" apply true
     kotlin("jvm")
 }
 
@@ -39,6 +39,7 @@ val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven(paperMavenPublicUrl) {
 //        content {
 //            onlyForConfigurations(
@@ -109,6 +110,8 @@ tasks.create("genSource") {
         println()
         downloadFileFromUrl("https://github.com/Vineflower/vineflower/releases/download/$DECOMPILER_VERSION/vineflower-$DECOMPILER_VERSION.jar", "./.gradle/caches/decompiler/decompiler.jar")
 
+        println("Preparing for decompile...")
+        File("Pencil-Server").listFiles().forEach { delete(it) }
         println("Starting decompile...")
         val stopWatch = StopWatch()
         stopWatch.start()
@@ -132,11 +135,46 @@ tasks.create("genSource") {
         println()
         println("Finished decompile in ${stopWatch.elapsedTime} ms")
         buildSourceRepo()
-        // defineSource()
+        defineSource()
 
-        getSubmoduleCommits("Pencil-Server").forEach { println(it) }
         println("Patches applied successfully")
     }
+}
+
+tasks.create("createPatches") {
+    val submoduleDir = File("Pencil-Server")
+    val patchesDir = File("patches")
+
+    if (!patchesDir.exists()) {
+        patchesDir.mkdir()
+    }
+
+    // Get all commits in the submodule
+    val commits = getCommits(submoduleDir)
+
+    // Create patches for each commit
+    commits.forEach { commit ->
+        val patchFile = File(patchesDir, "$commit.patch")
+        createPatch(submoduleDir, commit, patchFile)
+    }
+}
+
+fun getCommits(submoduleDir: File): List<String> {
+    val process = ProcessBuilder("git", "log", "--format=%H")
+        .directory(submoduleDir)
+        .start()
+    val output = process.inputStream.bufferedReader().readText()
+    process.waitFor()
+
+    return output.lines().filter { it.isNotBlank() }
+}
+
+fun createPatch(submoduleDir: File, commit: String, patchFile: File) {
+    val process = ProcessBuilder("git", "format-patch", "-1", commit, "--stdout")
+        .directory(submoduleDir)
+        .redirectOutput(patchFile)
+        .start()
+    process.waitFor()
 }
 
 fun defineSource() {
