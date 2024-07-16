@@ -1,9 +1,16 @@
+import io.papermc.paperweight.tasks.RemapJar
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.jetbrains.kotlin.org.apache.commons.lang3.time.StopWatch
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.file.Paths
 
 val MINECRAFT_VERSION = "1.21"
 val VER_FILE = "./cache/data/versions.ver"
 val CACHE_DIR = "./cache/pencil"
+val DECOMPILER_VERSION = "1.10.1"
 
 plugins {
     id("java")
@@ -95,10 +102,72 @@ tasks.test {
 tasks.create("genSource") {
     dependsOn("remapJar")
     doLast {
+        println("Downloading decompiler...")
+        println()
+        downloadFileFromUrl("https://github.com/Vineflower/vineflower/releases/download/$DECOMPILER_VERSION/vineflower-$DECOMPILER_VERSION.jar", "./.gradle/caches/decompiler/decompiler.jar")
 
+        println("Starting decompile...")
+        val stopWatch = StopWatch()
+        stopWatch.start()
+
+        val remapJarTask = tasks.getByName<RemapJar>("remapJar")
+        val jarFile = File(remapJarTask.outputJar.asFile.get().parentFile.parentFile.parentFile.resolve("decompiler").resolve("decompiler.jar").absolutePath)
+
+        val processBuilder = ProcessBuilder("java", "-jar", jarFile.absolutePath, "${remapJarTask.outputJar.asFile.get()}", "./Pencil-Server/src/main/java/")
+            .redirectErrorStream(true)
+        val process = processBuilder.start()
+
+        process.inputStream.bufferedReader().useLines { lines ->
+            lines.forEach { line ->
+                println(line)
+            }
+        }
+
+        val exitCode = process.waitFor()
+        println("Process exited with code: $exitCode")
+        stopWatch.stop()
+        println()
+        println("Finished decompile in ${stopWatch.elapsedTime} ms")
 
         println("Patches applied successfully")
     }
+}
+
+fun downloadFileFromUrl(fileUrl: String, destinationPath: String) {
+    val url = URL(fileUrl)
+    val connection = url.openConnection() as HttpURLConnection
+
+    connection.inputStream.use { input ->
+        File(destinationPath).apply {
+            parentFile.mkdirs()
+            FileOutputStream(this).use { output ->
+                input.copyTo(output)
+            }
+        }
+    }
+}
+
+class StopWatch {
+    private var startTime: Long = 0
+    private var endTime: Long = 0
+    private var running = false
+
+    fun start() {
+        startTime = System.currentTimeMillis()
+        running = true
+    }
+
+    fun stop() {
+        endTime = System.currentTimeMillis()
+        running = false
+    }
+
+    val elapsedTime: Long
+        get() = if (running) {
+            System.currentTimeMillis() - startTime
+        } else {
+            endTime - startTime
+        }
 }
 
 tasks.getByName("clean").dependsOn("cleanCache")
