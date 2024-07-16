@@ -128,6 +128,7 @@ tasks.create("genSource") {
         stopWatch.stop()
         println()
         println("Finished decompile in ${stopWatch.elapsedTime} ms")
+        buildSourceRepo()
 
         println("Patches applied successfully")
     }
@@ -145,6 +146,56 @@ fun downloadFileFromUrl(fileUrl: String, destinationPath: String) {
             }
         }
     }
+}
+
+fun buildSourceRepo() {
+    val projectDir = File("Pencil-Server")
+    if (!projectDir.exists()) {
+        projectDir.mkdirs()
+    }
+
+    val gitignoreFile = File(projectDir, ".gitignore")
+    val buildGradleKtsFile = File(projectDir, "build.gradle.kts")
+    val gradlePropertiesFile = File(projectDir, "gradle.properties")
+
+    gitignoreFile.writeText("""
+        # Ignore Gradle files
+        /.gradle
+        /build/
+        
+        # Ignore IntelliJ IDEA project files
+        /.idea
+        *.iml
+        
+        # Ignore Mac OS files
+        .DS_Store
+        
+        # Ignore other unnecessary files
+        *.log
+        """.trimIndent())
+
+    buildGradleKtsFile.writeText("""
+        plugins {
+            id("java")
+            kotlin("jvm")
+        }
+
+        group = "net.minecraft"
+        version = "$MINECRAFT_VERSION"
+
+        repositories {
+            mavenCentral()
+        }
+        """.trimIndent())
+
+    gradlePropertiesFile.writeText("""
+        # Project properties
+        org.gradle.caching=true
+        org.gradle.parallel=true
+        org.gradle.vfs.watch=false
+        """.trimIndent())
+
+    println("Subproject source successfully built")
 }
 
 class StopWatch {
