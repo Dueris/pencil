@@ -1,14 +1,11 @@
 import io.papermc.paperweight.tasks.RemapJar
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.jetbrains.kotlin.org.apache.commons.lang3.time.StopWatch
 import java.io.BufferedReader
 import java.io.FileOutputStream
-import java.io.IOException
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
-import java.nio.file.Paths
 
 val MINECRAFT_VERSION = "1.21"
 val VER_FILE = "./cache/data/versions.ver"
@@ -103,11 +100,32 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.create("initPatches") {
+    doLast {
+        val submodulePath = "Pencil-Server"
+        val commits = getSubmoduleCommits(submodulePath)
+
+        val patchesDir = File(submodulePath, "patches")
+        patchesDir.mkdirs()
+
+        commits.reversed().forEachIndexed { index, commit ->
+            try {
+                println("Found commit $commit, applying...")
+                runCommand("git format-patch -1 ".plus(commit), File(submodulePath))
+            } catch (e : Exception) {
+                throw RuntimeException("Unable to apply patch \"$commit\"", e)
+            }
+        }
+    }
+}
+
 tasks.create("genSource") {
     dependsOn("remapJar")
     doLast {
+        File("Pencil-Server").deleteRecursively()
         println("Preparing for source gen...")
-        runCommand("git clone https://github.com/Dueris/Pencil-Server", File("."))
+        runCommand("git|init", File("Pencil-Server"))
+        runCommand("git|rm|-rf|.", File("Pencil-Server"))
         println("Downloading decompiler...")
         downloadFileFromUrl(
             "https://github.com/Vineflower/vineflower/releases/download/$DECOMPILER_VERSION/vineflower-$DECOMPILER_VERSION.jar",
@@ -147,13 +165,21 @@ tasks.create("genSource") {
         println("Finished decompile in ${stopWatch.elapsedTime} ms")
         buildSourceRepo()
 
+        runCommand("git|add|.", File("Pencil-Server"))
+        runCommand("git|commit|-m|\"Initial Source\"", File("Pencil-Server"))
+
+        getSubmoduleCommits("Pencil-Server").forEach { println("Found commit: $it") }
+
         println("Patches applied successfully")
     }
 }
 
 fun runCommand(command: String, directory: File) {
     try {
-        val process = ProcessBuilder(*command.split(" ").toTypedArray())
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+        val process = ProcessBuilder(*command.split("|").toTypedArray())
             .directory(directory)
             .redirectErrorStream(true)
             .start()
@@ -163,21 +189,20 @@ fun runCommand(command: String, directory: File) {
 
         println(result)
     } catch (e: Exception) {
-        e.printStackTrace()
+        throw e
     }
 }
 
 fun getSubmoduleCommits(submodulePath: String): List<String> {
-    // Change to the submodule directory
-    val processBuilder = ProcessBuilder("git", "-C", submodulePath, "log", "--oneline")
+    val processBuilder = ProcessBuilder("git", "log").directory(File("./Pencil-Server/"))
     val process = processBuilder.start()
 
     val result = mutableListOf<String>()
     BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-        var line = reader.readLine()
-        while (line != null) {
-            result.add(line)
-            line = reader.readLine()
+        reader.forEachLine {
+            if (it.startsWith("commit ")) {
+                result.add(it.split("commit ")[1].split(" ")[0])
+            }
         }
     }
 
