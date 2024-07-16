@@ -106,15 +106,14 @@ tasks.test {
 tasks.create("genSource") {
     dependsOn("remapJar")
     doLast {
+        println("Preparing for source gen...")
+        runCommand("git clone https://github.com/Dueris/Pencil-Server", File("."))
         println("Downloading decompiler...")
-        println()
         downloadFileFromUrl(
             "https://github.com/Vineflower/vineflower/releases/download/$DECOMPILER_VERSION/vineflower-$DECOMPILER_VERSION.jar",
             "./.gradle/caches/decompiler/decompiler.jar"
         )
-
-        println("Preparing for decompile...")
-        File("Pencil-Server").listFiles().forEach { delete(it) }
+        println()
         println("Starting decompile...")
         val stopWatch = StopWatch()
         stopWatch.start()
@@ -152,19 +151,19 @@ tasks.create("genSource") {
     }
 }
 
-fun runCommand(command: List<String>, workingDir: File): String {
-    return try {
-        val process = ProcessBuilder(command)
-            .directory(workingDir)
+fun runCommand(command: String, directory: File) {
+    try {
+        val process = ProcessBuilder(*command.split(" ").toTypedArray())
+            .directory(directory)
             .redirectErrorStream(true)
             .start()
 
         val result = process.inputStream.bufferedReader().use { it.readText() }
         process.waitFor()
-        result
-    } catch (e: IOException) {
+
+        println(result)
+    } catch (e: Exception) {
         e.printStackTrace()
-        "Error running command: ${e.message}"
     }
 }
 
