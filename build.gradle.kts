@@ -6,6 +6,9 @@ import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 val MINECRAFT_VERSION = "1.21"
 val VER_FILE = "./cache/data/versions.ver"
@@ -113,7 +116,31 @@ tasks.create("initPatches") {
     }
 }
 
+tasks.create("genSources").dependsOn("genSource")
+
 tasks.create("genSource") {
+    dependsOn("setupEnvironment")
+    doLast {
+        moveFile("./Pencil-Server/src/main/java/META-INF", "./Pencil-Server/src/main/resources")
+
+        runCommand("git|add|.", File("Pencil-Server"))
+        runCommand("git|commit|-m|Initial Source", File("Pencil-Server"))
+
+        rootDir.resolve("patches").listFiles()?.forEach {
+            println("Found commit $it, applying...")
+            val input = it.name.replace("-", " ")
+            val removedSuffix = input.removeSuffix(".patch")
+            val result = removedSuffix.substring(5, minOf(100, removedSuffix.length))
+            runCommand("git|apply|${it}|--3way|--ignore-whitespace", rootDir.resolve("Pencil-Server"))
+            runCommand("git|add|.", rootDir.resolve("Pencil-Server"))
+            runCommand("git|commit|-m|$result", rootDir.resolve("Pencil-Server"))
+        }
+
+        println("Patches applied successfully")
+    }
+}
+
+tasks.create("setupEnvironment") {
     dependsOn("remapJar")
     doLast {
         File("Pencil-Server").deleteRecursively()
@@ -158,21 +185,6 @@ tasks.create("genSource") {
         println()
         println("Finished decompile in ${stopWatch.elapsedTime} ms")
         buildSourceRepo()
-
-        runCommand("git|add|.", File("Pencil-Server"))
-        runCommand("git|commit|-m|Initial Source", File("Pencil-Server"))
-
-        rootDir.resolve("patches").listFiles()?.forEach {
-            println("Found commit $it, applying...")
-            val input = it.name.replace("-", " ")
-            val removedSuffix = input.removeSuffix(".patch")
-            val result = removedSuffix.substring(5, minOf(100, removedSuffix.length))
-            runCommand("git|apply|${it}|--3way|--ignore-whitespace", rootDir.resolve("Pencil-Server"))
-            runCommand("git|add|.", rootDir.resolve("Pencil-Server"))
-            runCommand("git|commit|-m|$result", rootDir.resolve("Pencil-Server"))
-        }
-
-        println("Patches applied successfully")
     }
 }
 
@@ -290,6 +302,22 @@ fun buildSourceRepo() {
         """.trimIndent())
 
     println("Subproject source successfully built")
+}
+
+fun moveFile(sourcePath: String, targetDirPath: String) {
+    val sourceFile = File(sourcePath)
+    val targetDir = File(targetDirPath)
+
+    if (!targetDir.exists()) {
+        targetDir.mkdirs()
+    }
+
+    val targetFile = File(targetDir, sourceFile.name)
+    Files.move(
+        rootDir.resolve(sourcePath).toPath(),
+        rootDir.resolve(targetFile).toPath(),
+        StandardCopyOption.REPLACE_EXISTING
+    )
 }
 
 class StopWatch {

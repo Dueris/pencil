@@ -1,36 +1,114 @@
-From 937c3dca394d9bcc3e1bd46290204f3eeb5c982e Mon Sep 17 00:00:00 2001
+From 506407e07be584b7143588fb1a9666493f1558b7 Mon Sep 17 00:00:00 2001
 From: dueris <jedimastertoothless@hotmail.com>
-Date: Wed, 17 Jul 2024 07:13:19 -0700
-Subject: [PATCH] Decompile Errors
+Date: Wed, 17 Jul 2024 10:45:15 -0700
+Subject: [PATCH] Decompile Fixes
 
 ---
+ src/main/java/net/minecraft/Util.java         |   6 +-
  .../minecraft/advancements/Advancement.java   |   4 +-
  .../net/minecraft/advancements/Criterion.java |   2 +-
+ .../critereon/EnterBlockTrigger.java          |   2 +-
+ .../advancements/critereon/MinMaxBounds.java  |   6 +-
+ .../critereon/SlideDownBlockTrigger.java      |   2 +-
  .../java/net/minecraft/commands/Commands.java |   2 +-
  .../arguments/ArgumentSignatures.java         |   8 +-
+ .../commands/arguments/OperationArgument.java |   2 +-
+ .../commands/arguments/item/ItemInput.java    |   2 +-
+ .../execution/tasks/BuildContexts.java        |   6 +-
+ .../synchronization/ArgumentTypeInfos.java    |   8 +-
+ .../synchronization/SuggestionProviders.java  |   2 +-
  .../java/net/minecraft/core/BlockPos.java     |   6 +-
  .../java/net/minecraft/core/HolderLookup.java |   2 +-
  .../java/net/minecraft/core/Registry.java     |  16 +--
+ .../minecraft/core/RegistrySetBuilder.java    |   4 +-
  .../core/component/DataComponentPatch.java    |   2 +-
  .../core/component/DataComponentType.java     |   2 +-
  .../core/component/TypedDataComponent.java    |   4 +-
+ .../data/info/RegistryDumpReport.java         |   2 +-
+ .../minecraft/data/tags/ItemTagsProvider.java |   2 +-
  src/main/java/net/minecraft/nbt/NbtOps.java   | 111 ++++++++++++++----
+ .../java/net/minecraft/nbt/TagParser.java     |   6 +-
  .../network/chat/LastSeenMessages.java        |   2 +-
  .../minecraft/network/codec/StreamCodec.java  |   2 +-
  .../ClientboundCustomPayloadPacket.java       |   4 +-
  .../ServerboundCustomPayloadPacket.java       |  14 +--
  .../common/custom/CustomPacketPayload.java    |   2 +-
+ ...lientboundUpdateEnabledFeaturesPacket.java |   2 +-
  .../network/syncher/EntityDataSerializer.java |   2 +-
  .../net/minecraft/resources/RegistryOps.java  |   2 +-
  .../net/minecraft/server/MinecraftServer.java |   2 +-
  .../server/level/ChunkTaskPriorityQueue.java  |  16 ++-
  .../server/level/DistanceManager.java         |  17 +--
+ .../server/level/ServerChunkCache.java        |   2 +-
  .../minecraft/server/level/ServerLevel.java   |  33 +++---
  .../minecraft/server/level/ServerPlayer.java  |  19 +--
  .../server/level/TickingTracker.java          |  15 ++-
  .../network/ServerGamePacketListenerImpl.java |   6 +-
+ .../java/net/minecraft/util/CubicSpline.java  |  20 ++--
  .../java/net/minecraft/util/ExtraCodecs.java  |  39 +++---
+ .../util/LowerCaseEnumTypeAdapterFactory.java |   2 +-
  .../net/minecraft/util/SortedArraySet.java    |   2 +-
+ .../minecraft/util/datafix/DataFixers.java    |  56 +++++----
+ .../util/datafix/fixes/AddNewChoices.java     |  30 +++--
+ .../util/datafix/fixes/AdvancementsFix.java   |   2 +-
+ .../datafix/fixes/AttributeModifierIdFix.java |   2 +-
+ .../util/datafix/fixes/BiomeFix.java          |   2 +-
+ .../util/datafix/fixes/BlockEntityIdFix.java  |   6 +-
+ .../datafix/fixes/BlockEntityRenameFix.java   |   4 +-
+ .../datafix/fixes/BlockEntityUUIDFix.java     |   2 +-
+ .../datafix/fixes/CavesAndCliffsRenames.java  |   2 +-
+ ...ChestedHorsesInventoryZeroIndexingFix.java |   5 +-
+ .../fixes/ChunkBedBlockEntityInjecterFix.java |   5 +-
+ .../datafix/fixes/ChunkHeightAndBiomeFix.java |   5 +-
+ .../fixes/ChunkPalettedStorageFix.java        |  14 +--
+ .../datafix/fixes/ChunkProtoTickListFix.java  |   2 +-
+ .../util/datafix/fixes/ChunkStatusFix2.java   |   2 +-
+ .../ChunkStructuresTemplateRenameFix.java     |  10 +-
+ .../util/datafix/fixes/DyeItemRenameFix.java  |   2 +-
+ .../datafix/fixes/EmptyItemInHotbarFix.java   |   8 +-
+ .../datafix/fixes/EntityBlockStateFix.java    |   6 +-
+ .../datafix/fixes/EntityCodSalmonFix.java     |   4 +-
+ .../EntityEquipmentToArmorAndHandFix.java     |   4 +-
+ .../util/datafix/fixes/EntityIdFix.java       |   6 +-
+ .../fixes/EntityPaintingMotiveFix.java        |   2 +-
+ .../fixes/EntityPufferfishRenameFix.java      |   2 +-
+ .../datafix/fixes/EntityRavagerRenameFix.java |   2 +-
+ .../util/datafix/fixes/EntityRenameFix.java   |   4 +-
+ .../fixes/EntityRidingToPassengersFix.java    |   6 +-
+ .../datafix/fixes/EntityTheRenameningFix.java |   6 +-
+ .../util/datafix/fixes/EntityUUIDFix.java     |   6 +-
+ .../fixes/EntityZombifiedPiglinRenameFix.java |   2 +-
+ .../fixes/FixProjectileStoredItem.java        |   2 +-
+ .../util/datafix/fixes/GossipUUIDFix.java     |   2 +-
+ .../util/datafix/fixes/ItemSpawnEggFix.java   |   5 +-
+ .../fixes/ItemStackComponentizationFix.java   |   2 +-
+ .../datafix/fixes/ItemStackSpawnEggFix.java   |   2 +-
+ .../fixes/ItemStackTheFlatteningFix.java      |   2 +-
+ .../util/datafix/fixes/ItemStackUUIDFix.java  |   2 +-
+ .../util/datafix/fixes/JigsawRotationFix.java |   2 +-
+ .../util/datafix/fixes/LeavesFix.java         |   2 +-
+ .../util/datafix/fixes/LevelUUIDFix.java      |   4 +-
+ .../fixes/MobSpawnerEntityIdentifiersFix.java |   6 +-
+ .../fixes/NamedEntityWriteReadFix.java        |  10 +-
+ .../datafix/fixes/OptionsKeyLwjgl3Fix.java    |  14 +--
+ .../fixes/OptionsKeyTranslationFix.java       |  16 +--
+ .../fixes/ParticleUnflatteningFix.java        |   2 +-
+ .../util/datafix/fixes/RecipesFix.java        |   2 +-
+ .../datafix/fixes/RecipesRenameningFix.java   |   2 +-
+ .../datafix/fixes/RenamedCoralFansFix.java    |   2 +-
+ .../util/datafix/fixes/RenamedCoralFix.java   |   2 +-
+ .../util/datafix/fixes/SavedDataUUIDFix.java  |   2 +-
+ .../fixes/ScoreboardDisplaySlotFix.java       |   2 +-
+ .../fixes/SimplestEntityRenameFix.java        |   4 +-
+ .../util/datafix/fixes/SpawnerDataFix.java    |   2 +-
+ .../util/datafix/fixes/StatsCounterFix.java   |  10 +-
+ .../fixes/StructuresBecomeConfiguredFix.java  |   2 +-
+ .../fixes/TrappedChestBlockEntityFix.java     |   2 +-
+ .../util/datafix/fixes/VillagerDataFix.java   |   2 +-
+ .../datafix/fixes/WorldGenSettingsFix.java    |   4 +-
+ .../minecraft/util/datafix/schemas/V704.java  |   2 +-
+ .../minecraft/util/datafix/schemas/V705.java  |   4 +-
+ .../minecraft/util/datafix/schemas/V99.java   |   4 +-
  .../valueproviders/BiasedToBottomInt.java     |   2 +-
  .../util/valueproviders/ClampedInt.java       |   2 +-
  .../valueproviders/ClampedNormalFloat.java    |  22 ++--
@@ -60,6 +138,7 @@ Subject: [PATCH] Decompile Errors
  .../net/minecraft/world/level/GameRules.java  |   4 +-
  .../minecraft/world/level/biome/Climate.java  |   2 +-
  .../world/level/biome/MobSpawnSettings.java   |   2 +-
+ .../MultiNoiseBiomeSourceParameterList.java   |   2 +-
  .../world/level/block/SculkSpreader.java      |  26 ++--
  .../level/block/entity/SkullBlockEntity.java  |   2 +-
  .../level/block/entity/vault/VaultConfig.java |  28 +++--
@@ -70,14 +149,39 @@ Subject: [PATCH] Decompile Errors
  .../world/level/levelgen/NoiseSettings.java   |   2 +-
  .../world/level/levelgen/SurfaceRules.java    |  52 ++++----
  .../level/levelgen/blending/BlendingData.java |   2 +-
+ .../flat/FlatLevelGeneratorSettings.java      |   2 +-
+ .../level/levelgen/presets/WorldPreset.java   |   2 +-
  .../levelgen/structure/StructurePiece.java    |   2 +-
  .../structure/pieces/PiecesContainer.java     |   2 +-
  .../RandomSpreadStructurePlacement.java       |  22 ++--
  .../structure/structures/JigsawStructure.java |  12 +-
  .../level/storage/loot/ValidationContext.java |   2 +-
  .../minecraft/world/scores/Scoreboard.java    |  39 +++---
- 72 files changed, 544 insertions(+), 382 deletions(-)
+ 153 files changed, 762 insertions(+), 576 deletions(-)
 
+diff --git a/src/main/java/net/minecraft/Util.java b/src/main/java/net/minecraft/Util.java
+index 013c26e..da51490 100644
+--- a/src/main/java/net/minecraft/Util.java
++++ b/src/main/java/net/minecraft/Util.java
+@@ -937,15 +937,15 @@ public class Util {
+    }
+ 
+    public static <T> List<T> copyAndAdd(List<T> list, T valueToAppend) {
+-      return ImmutableList.builderWithExpectedSize(list.size() + 1).addAll(list).add(valueToAppend).build();
++      return ImmutableList.<T>builderWithExpectedSize(list.size() + 1).addAll(list).add(valueToAppend).build(); // Pencil - decompile fix
+    }
+ 
+    public static <T> List<T> copyAndAdd(T valueToPrepend, List<T> list) {
+-      return ImmutableList.builderWithExpectedSize(list.size() + 1).add(valueToPrepend).addAll(list).build();
++      return ImmutableList.<T>builderWithExpectedSize(list.size() + 1).add(valueToPrepend).addAll(list).build(); // Pencil - decompile fix
+    }
+ 
+    public static <K, V> Map<K, V> copyAndPut(Map<K, V> map, K keyToAppend, V valueToAppend) {
+-      return ImmutableMap.builderWithExpectedSize(map.size() + 1).putAll(map).put(keyToAppend, valueToAppend).buildKeepingLast();
++      return ImmutableMap.<K, V>builderWithExpectedSize(map.size() + 1).putAll(map).put(keyToAppend, valueToAppend).buildKeepingLast(); // Pencil - decompile fix
+    }
+ 
+    public static enum OS {
 diff --git a/src/main/java/net/minecraft/advancements/Advancement.java b/src/main/java/net/minecraft/advancements/Advancement.java
 index 94ca6b6..74f6a57 100644
 --- a/src/main/java/net/minecraft/advancements/Advancement.java
@@ -112,6 +216,63 @@ index f458279..81cb017 100644
     );
     public static final Codec<Criterion<?>> CODEC = MAP_CODEC.codec();
  
+diff --git a/src/main/java/net/minecraft/advancements/critereon/EnterBlockTrigger.java b/src/main/java/net/minecraft/advancements/critereon/EnterBlockTrigger.java
+index 38ad0d9..b2291d1 100644
+--- a/src/main/java/net/minecraft/advancements/critereon/EnterBlockTrigger.java
++++ b/src/main/java/net/minecraft/advancements/critereon/EnterBlockTrigger.java
+@@ -24,7 +24,7 @@ public class EnterBlockTrigger extends SimpleCriterionTrigger<EnterBlockTrigger.
+ 
+    public static record TriggerInstance(Optional<ContextAwarePredicate> player, Optional<Holder<Block>> block, Optional<StatePropertiesPredicate> state)
+       implements SimpleCriterionTrigger.SimpleInstance {
+-      public static final Codec<EnterBlockTrigger.TriggerInstance> CODEC = RecordCodecBuilder.create(
++      public static final Codec<EnterBlockTrigger.TriggerInstance> CODEC = RecordCodecBuilder.<EnterBlockTrigger.TriggerInstance>create( // Pencil - decompile fix
+             instance -> instance.group(
+                      EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(EnterBlockTrigger.TriggerInstance::player),
+                      BuiltInRegistries.BLOCK.holderByNameCodec().optionalFieldOf("block").forGetter(EnterBlockTrigger.TriggerInstance::block),
+diff --git a/src/main/java/net/minecraft/advancements/critereon/MinMaxBounds.java b/src/main/java/net/minecraft/advancements/critereon/MinMaxBounds.java
+index c3dc18b..ec06e64 100644
+--- a/src/main/java/net/minecraft/advancements/critereon/MinMaxBounds.java
++++ b/src/main/java/net/minecraft/advancements/critereon/MinMaxBounds.java
+@@ -38,7 +38,7 @@ public interface MinMaxBounds<T extends Number> {
+                .apply(instance, rangeFactory::create)
+       );
+       return Codec.either(codec, valueCodec)
+-         .xmap(either -> (MinMaxBounds)either.map(range -> range, value -> rangeFactory.create(Optional.of((T)value), Optional.of((T)value))), range -> {
++          .xmap(either -> either.map(range -> (R)range, value -> rangeFactory.create(Optional.of((T)value), Optional.of((T)value))), range -> { // Pencil - decompile fix
+             Optional<T> optional = range.unwrapPoint();
+             return optional.isPresent() ? Either.right(optional.get()) : Either.left(range);
+          });
+@@ -124,7 +124,7 @@ public interface MinMaxBounds<T extends Number> {
+ 
+    public static record Doubles(Optional<Double> min, Optional<Double> max, Optional<Double> minSq, Optional<Double> maxSq) implements MinMaxBounds<Double> {
+       public static final MinMaxBounds.Doubles ANY = new MinMaxBounds.Doubles(Optional.empty(), Optional.empty());
+-      public static final Codec<MinMaxBounds.Doubles> CODEC = MinMaxBounds.createCodec(Codec.DOUBLE, MinMaxBounds.Doubles::new);
++      public static final Codec<MinMaxBounds.Doubles> CODEC = MinMaxBounds.<Double, MinMaxBounds.Doubles>createCodec(Codec.DOUBLE, MinMaxBounds.Doubles::new); // Pencil - decompile fix
+ 
+       private Doubles(Optional<Double> min, Optional<Double> max) {
+          this(min, max, squareOpt(min), squareOpt(max));
+@@ -179,7 +179,7 @@ public interface MinMaxBounds<T extends Number> {
+ 
+    public static record Ints(Optional<Integer> min, Optional<Integer> max, Optional<Long> minSq, Optional<Long> maxSq) implements MinMaxBounds<Integer> {
+       public static final MinMaxBounds.Ints ANY = new MinMaxBounds.Ints(Optional.empty(), Optional.empty());
+-      public static final Codec<MinMaxBounds.Ints> CODEC = MinMaxBounds.createCodec(Codec.INT, MinMaxBounds.Ints::new);
++      public static final Codec<MinMaxBounds.Ints> CODEC = MinMaxBounds.<Integer, MinMaxBounds.Ints>createCodec(Codec.INT, MinMaxBounds.Ints::new); // Pencil - decompile fix
+ 
+       private Ints(Optional<Integer> min, Optional<Integer> max) {
+          this(min, max, min.map(i -> i.longValue() * i.longValue()), squareOpt(max));
+diff --git a/src/main/java/net/minecraft/advancements/critereon/SlideDownBlockTrigger.java b/src/main/java/net/minecraft/advancements/critereon/SlideDownBlockTrigger.java
+index ac10728..9a917c7 100644
+--- a/src/main/java/net/minecraft/advancements/critereon/SlideDownBlockTrigger.java
++++ b/src/main/java/net/minecraft/advancements/critereon/SlideDownBlockTrigger.java
+@@ -24,7 +24,7 @@ public class SlideDownBlockTrigger extends SimpleCriterionTrigger<SlideDownBlock
+ 
+    public static record TriggerInstance(Optional<ContextAwarePredicate> player, Optional<Holder<Block>> block, Optional<StatePropertiesPredicate> state)
+       implements SimpleCriterionTrigger.SimpleInstance {
+-      public static final Codec<SlideDownBlockTrigger.TriggerInstance> CODEC = RecordCodecBuilder.create(
++      public static final Codec<SlideDownBlockTrigger.TriggerInstance> CODEC = RecordCodecBuilder.<SlideDownBlockTrigger.TriggerInstance>create( // Pencil - decompile fix
+             instance -> instance.group(
+                      EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(SlideDownBlockTrigger.TriggerInstance::player),
+                      BuiltInRegistries.BLOCK.holderByNameCodec().optionalFieldOf("block").forGetter(SlideDownBlockTrigger.TriggerInstance::block),
 diff --git a/src/main/java/net/minecraft/commands/Commands.java b/src/main/java/net/minecraft/commands/Commands.java
 index c6aa3eb..885c733 100644
 --- a/src/main/java/net/minecraft/commands/Commands.java
@@ -146,6 +307,90 @@ index 5e3a249..b989ff5 100644
     public void write(FriendlyByteBuf buf) {
        buf.writeCollection(this.entries, (buf2, entry) -> entry.write(buf2));
     }
+diff --git a/src/main/java/net/minecraft/commands/arguments/OperationArgument.java b/src/main/java/net/minecraft/commands/arguments/OperationArgument.java
+index 013fc2a..2345cb8 100644
+--- a/src/main/java/net/minecraft/commands/arguments/OperationArgument.java
++++ b/src/main/java/net/minecraft/commands/arguments/OperationArgument.java
+@@ -54,7 +54,7 @@ public class OperationArgument implements ArgumentType<OperationArgument.Operati
+    }
+ 
+    private static OperationArgument.Operation getOperation(String operator) throws CommandSyntaxException {
+-      return (OperationArgument.Operation)(operator.equals("><") ? (a, b) -> {
++      return (operator.equals("><") ? (a, b) -> { // Pencil - decompile fix
+          int i = a.get();
+          a.set(b.get());
+          b.set(i);
+diff --git a/src/main/java/net/minecraft/commands/arguments/item/ItemInput.java b/src/main/java/net/minecraft/commands/arguments/item/ItemInput.java
+index 8127ed9..3bc1152 100644
+--- a/src/main/java/net/minecraft/commands/arguments/item/ItemInput.java
++++ b/src/main/java/net/minecraft/commands/arguments/item/ItemInput.java
+@@ -78,6 +78,6 @@ public class ItemInput {
+    }
+ 
+    private String getItemName() {
+-      return this.item.unwrapKey().map(ResourceKey::location).orElseGet(() -> "unknown[" + this.item + "]").toString();
++      return this.item.unwrapKey().<Object>map(ResourceKey::location).orElseGet(() -> "unknown[" + this.item + "]").toString(); // Pencil - decompile fix
+    }
+ }
+diff --git a/src/main/java/net/minecraft/commands/execution/tasks/BuildContexts.java b/src/main/java/net/minecraft/commands/execution/tasks/BuildContexts.java
+index 5a9d773..cb7d32d 100644
+--- a/src/main/java/net/minecraft/commands/execution/tasks/BuildContexts.java
++++ b/src/main/java/net/minecraft/commands/execution/tasks/BuildContexts.java
+@@ -52,7 +52,7 @@ public class BuildContexts<T extends ExecutionCommandSource<T>> {
+                }
+ 
+                RedirectModifier<T> redirectModifier = commandContext.getRedirectModifier();
+-               if (redirectModifier instanceof CustomModifierExecutor<T> customModifierExecutor) {
++               if (redirectModifier instanceof CustomModifierExecutor customModifierExecutor) { // Pencil - decompile error
+                   customModifierExecutor.apply(baseSource, list, contextChain, chainModifiers, ExecutionControl.create(context, frame));
+                   return;
+                }
+@@ -90,11 +90,11 @@ public class BuildContexts<T extends ExecutionCommandSource<T>> {
+ 
+       if (list.isEmpty()) {
+          if (chainModifiers.isReturn()) {
+-            context.queueNext(new CommandQueueEntry<>(frame, FallthroughTask.instance()));
++            context.queueNext(new CommandQueueEntry<>(frame, (EntryAction<T>) FallthroughTask.instance())); // Pencil - decompile error
+          }
+       } else {
+          CommandContext<T> commandContext2 = contextChain.getTopContext();
+-         if (commandContext2.getCommand() instanceof CustomCommandExecutor<T> customCommandExecutor) {
++         if (commandContext2.getCommand() instanceof CustomCommandExecutor customCommandExecutor) { // Pencil - decompile error
+             ExecutionControl<T> executionControl = ExecutionControl.create(context, frame);
+ 
+             for (T executionCommandSource2 : list) {
+diff --git a/src/main/java/net/minecraft/commands/synchronization/ArgumentTypeInfos.java b/src/main/java/net/minecraft/commands/synchronization/ArgumentTypeInfos.java
+index 0b4a56d..8bd6206 100644
+--- a/src/main/java/net/minecraft/commands/synchronization/ArgumentTypeInfos.java
++++ b/src/main/java/net/minecraft/commands/synchronization/ArgumentTypeInfos.java
+@@ -119,10 +119,10 @@ public class ArgumentTypeInfos {
+       register(registry, "dimension", DimensionArgument.class, SingletonArgumentInfo.contextFree(DimensionArgument::dimension));
+       register(registry, "gamemode", GameModeArgument.class, SingletonArgumentInfo.contextFree(GameModeArgument::gameMode));
+       register(registry, "time", TimeArgument.class, new TimeArgument.Info());
+-      register(registry, "resource_or_tag", fixClassType(ResourceOrTagArgument.class), new ResourceOrTagArgument.Info());
+-      register(registry, "resource_or_tag_key", fixClassType(ResourceOrTagKeyArgument.class), new ResourceOrTagKeyArgument.Info());
+-      register(registry, "resource", fixClassType(ResourceArgument.class), new ResourceArgument.Info());
+-      register(registry, "resource_key", fixClassType(ResourceKeyArgument.class), new ResourceKeyArgument.Info());
++      register(registry, "resource_or_tag", fixClassType(ResourceOrTagArgument.class), new ResourceOrTagArgument.Info<>()); // Pencil - decompile fix
++      register(registry, "resource_or_tag_key", fixClassType(ResourceOrTagKeyArgument.class), new ResourceOrTagKeyArgument.Info<>()); // Pencil - decompile fix
++      register(registry, "resource", fixClassType(ResourceArgument.class), new ResourceArgument.Info<>()); // Pencil - decompile fix
++      register(registry, "resource_key", fixClassType(ResourceKeyArgument.class), new ResourceKeyArgument.Info<>()); // Pencil - decompile fix
+       register(registry, "template_mirror", TemplateMirrorArgument.class, SingletonArgumentInfo.contextFree(TemplateMirrorArgument::templateMirror));
+       register(registry, "template_rotation", TemplateRotationArgument.class, SingletonArgumentInfo.contextFree(TemplateRotationArgument::templateRotation));
+       register(registry, "heightmap", HeightmapTypeArgument.class, SingletonArgumentInfo.contextFree(HeightmapTypeArgument::heightmap));
+diff --git a/src/main/java/net/minecraft/commands/synchronization/SuggestionProviders.java b/src/main/java/net/minecraft/commands/synchronization/SuggestionProviders.java
+index 48cdd51..d2e29b2 100644
+--- a/src/main/java/net/minecraft/commands/synchronization/SuggestionProviders.java
++++ b/src/main/java/net/minecraft/commands/synchronization/SuggestionProviders.java
+@@ -47,7 +47,7 @@ public class SuggestionProviders {
+          throw new IllegalArgumentException("A command suggestion provider is already registered with the name " + id);
+       } else {
+          PROVIDERS_BY_NAME.put(id, provider);
+-         return new SuggestionProviders.Wrapper(id, provider);
++         return (SuggestionProvider<S>) new SuggestionProviders.Wrapper(id, provider); // Pencil - decompile fix
+       }
+    }
+ 
 diff --git a/src/main/java/net/minecraft/core/BlockPos.java b/src/main/java/net/minecraft/core/BlockPos.java
 index 112664b..610b5c5 100644
 --- a/src/main/java/net/minecraft/core/BlockPos.java
@@ -213,6 +458,26 @@ index c888c1e..7f06969 100644
     }
  
     private DataResult<Holder.Reference<T>> safeCastToReference(Holder<T> entry) {
+diff --git a/src/main/java/net/minecraft/core/RegistrySetBuilder.java b/src/main/java/net/minecraft/core/RegistrySetBuilder.java
+index cb8b6d9..691a89d 100644
+--- a/src/main/java/net/minecraft/core/RegistrySetBuilder.java
++++ b/src/main/java/net/minecraft/core/RegistrySetBuilder.java
+@@ -410,13 +410,13 @@ public class RegistrySetBuilder {
+       }
+ 
+       <T> Holder.Reference<T> getOrCreate(ResourceKey<T> key) {
+-         return (Holder.Reference<T>)this.holders.computeIfAbsent(key, key2 -> Holder.Reference.createStandAlone(this.owner, (ResourceKey<Object>)key2));
++         return (Holder.Reference<T>)this.holders.computeIfAbsent((ResourceKey<Object>) key, key2 -> Holder.Reference.createStandAlone(this.owner, (ResourceKey<Object>)key2)); // Pencil - decompile fix
+       }
+    }
+ 
+    static class UniversalOwner implements HolderOwner<Object> {
+       public <T> HolderOwner<T> cast() {
+-         return this;
++         return (HolderOwner<T>) this; // Pencil - decompile fix
+       }
+    }
+ 
 diff --git a/src/main/java/net/minecraft/core/component/DataComponentPatch.java b/src/main/java/net/minecraft/core/component/DataComponentPatch.java
 index 627e0d2..6dc5fe3 100644
 --- a/src/main/java/net/minecraft/core/component/DataComponentPatch.java
@@ -261,6 +526,32 @@ index bb02223..4579dd1 100644
        }
  
        private static <T> void encodeCap(RegistryFriendlyByteBuf buf, TypedDataComponent<T> component) {
+diff --git a/src/main/java/net/minecraft/data/info/RegistryDumpReport.java b/src/main/java/net/minecraft/data/info/RegistryDumpReport.java
+index e0ed360..fb04562 100644
+--- a/src/main/java/net/minecraft/data/info/RegistryDumpReport.java
++++ b/src/main/java/net/minecraft/data/info/RegistryDumpReport.java
+@@ -34,7 +34,7 @@ public class RegistryDumpReport implements DataProvider {
+          jsonObject.addProperty("default", resourceLocation.toString());
+       }
+ 
+-      int i = BuiltInRegistries.REGISTRY.getId(registry);
++      int i = ((Registry) BuiltInRegistries.REGISTRY).getId(registry); // Pencil - decompile fix
+       jsonObject.addProperty("protocol_id", i);
+       JsonObject jsonObject2 = new JsonObject();
+       registry.holders().forEach(entry -> {
+diff --git a/src/main/java/net/minecraft/data/tags/ItemTagsProvider.java b/src/main/java/net/minecraft/data/tags/ItemTagsProvider.java
+index 5332799..cfbd16b 100644
+--- a/src/main/java/net/minecraft/data/tags/ItemTagsProvider.java
++++ b/src/main/java/net/minecraft/data/tags/ItemTagsProvider.java
+@@ -42,7 +42,7 @@ public abstract class ItemTagsProvider extends IntrinsicHolderTagsProvider<Item>
+       return super.createContentsProvider().thenCombine(this.blockTags, (lookup, blockTags) -> {
+          this.tagsToCopy.forEach((blockTag, itemTag) -> {
+             TagBuilder tagBuilder = this.getOrCreateRawBuilder((TagKey<Item>)itemTag);
+-            Optional<TagBuilder> optional = blockTags.apply((TagKey<? super TagKey<Block>>)blockTag);
++            Optional<TagBuilder> optional = blockTags.apply(blockTag); // Pencil - decompile fix
+             optional.orElseThrow(() -> new IllegalStateException("Missing block tag " + itemTag.location())).build().forEach(tagBuilder::add);
+          });
+          return (HolderLookup.Provider)lookup;
 diff --git a/src/main/java/net/minecraft/nbt/NbtOps.java b/src/main/java/net/minecraft/nbt/NbtOps.java
 index f8f4c3d..eff4ed5 100644
 --- a/src/main/java/net/minecraft/nbt/NbtOps.java
@@ -420,6 +711,25 @@ index f8f4c3d..eff4ed5 100644
     }
  
     public Tag createLongList(LongStream longStream) {
+diff --git a/src/main/java/net/minecraft/nbt/TagParser.java b/src/main/java/net/minecraft/nbt/TagParser.java
+index 52a30c0..93e875e 100644
+--- a/src/main/java/net/minecraft/nbt/TagParser.java
++++ b/src/main/java/net/minecraft/nbt/TagParser.java
+@@ -253,11 +253,11 @@ public class TagParser {
+          }
+ 
+          if (typeReader == ByteTag.TYPE) {
+-            list.add((T)((NumericTag)tag).getAsByte());
++            list.add((T)(Byte)((NumericTag)tag).getAsByte()); // Pencil - decompile fix
+          } else if (typeReader == LongTag.TYPE) {
+-            list.add((T)((NumericTag)tag).getAsLong());
++            list.add((T)(Long)((NumericTag)tag).getAsLong()); // Pencil - decompile fix
+          } else {
+-            list.add((T)((NumericTag)tag).getAsInt());
++            list.add((T)(Integer)((NumericTag)tag).getAsInt()); // Pencil - decompile fix
+          }
+ 
+          if (!this.hasElementSeparator()) {
 diff --git a/src/main/java/net/minecraft/network/chat/LastSeenMessages.java b/src/main/java/net/minecraft/network/chat/LastSeenMessages.java
 index 3ec2f35..20b9a8f 100644
 --- a/src/main/java/net/minecraft/network/chat/LastSeenMessages.java
@@ -506,6 +816,19 @@ index ed42021..e5decf1 100644
              streamCodec.encode(value, (T)payload);
           }
  
+diff --git a/src/main/java/net/minecraft/network/protocol/configuration/ClientboundUpdateEnabledFeaturesPacket.java b/src/main/java/net/minecraft/network/protocol/configuration/ClientboundUpdateEnabledFeaturesPacket.java
+index a71795b..933146d 100644
+--- a/src/main/java/net/minecraft/network/protocol/configuration/ClientboundUpdateEnabledFeaturesPacket.java
++++ b/src/main/java/net/minecraft/network/protocol/configuration/ClientboundUpdateEnabledFeaturesPacket.java
+@@ -14,7 +14,7 @@ public record ClientboundUpdateEnabledFeaturesPacket(Set<ResourceLocation> featu
+    );
+ 
+    private ClientboundUpdateEnabledFeaturesPacket(FriendlyByteBuf buf) {
+-      this(buf.readCollection(HashSet::new, FriendlyByteBuf::readResourceLocation));
++      this(buf.<ResourceLocation, Set<ResourceLocation>>readCollection(HashSet::new, FriendlyByteBuf::readResourceLocation)); // Pencil - decompile fix
+    }
+ 
+    private void write(FriendlyByteBuf buf) {
 diff --git a/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java b/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
 index f57ffa6..ee56963 100644
 --- a/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
@@ -607,6 +930,19 @@ index d06de01..5a7f66d 100644
     }
  
     @VisibleForTesting
+diff --git a/src/main/java/net/minecraft/server/level/ServerChunkCache.java b/src/main/java/net/minecraft/server/level/ServerChunkCache.java
+index 123712d..5006c2c 100644
+--- a/src/main/java/net/minecraft/server/level/ServerChunkCache.java
++++ b/src/main/java/net/minecraft/server/level/ServerChunkCache.java
+@@ -549,7 +549,7 @@ public class ServerChunkCache extends ChunkSource {
+       }
+ 
+       @Override
+-      protected boolean pollTask() {
++      public boolean pollTask() { // Pencil - decompile fix
+          if (ServerChunkCache.this.runDistanceManagerUpdates()) {
+             return true;
+          } else {
 diff --git a/src/main/java/net/minecraft/server/level/ServerLevel.java b/src/main/java/net/minecraft/server/level/ServerLevel.java
 index 36cbb10..81773d6 100644
 --- a/src/main/java/net/minecraft/server/level/ServerLevel.java
@@ -750,6 +1086,62 @@ index 0084c00..811be3b 100644
           itemStack2.set(
              DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(this.filterableFromOutgoing(title), this.player.getName().getString(), 0, list, true)
           );
+diff --git a/src/main/java/net/minecraft/util/CubicSpline.java b/src/main/java/net/minecraft/util/CubicSpline.java
+index 15186a2..7276181 100644
+--- a/src/main/java/net/minecraft/util/CubicSpline.java
++++ b/src/main/java/net/minecraft/util/CubicSpline.java
+@@ -32,7 +32,7 @@ public interface CubicSpline<C, I extends ToFloatFunction<C>> extends ToFloatFun
+                   Codec.lazyInitialized(mutableObject::getValue).fieldOf("value").forGetter(Point::value),
+                   Codec.FLOAT.fieldOf("derivative").forGetter(Point::derivative)
+                )
+-               .apply(instance, (location, value, derivative) -> new Point(location, value, derivative))
++              .apply(instance, (location, value, derivative) -> new Point<>(location, value, derivative)) // Pencil - decompile fix
+       );
+       Codec<CubicSpline.Multipoint<C, I>> codec2 = RecordCodecBuilder.create(
+          instance -> instance.group(
+@@ -41,32 +41,34 @@ public interface CubicSpline<C, I extends ToFloatFunction<C>> extends ToFloatFun
+                      .fieldOf("points")
+                      .forGetter(
+                         spline -> IntStream.range(0, spline.locations.length)
+-                              .mapToObj(
+-                                 index -> new Point(spline.locations()[index], (CubicSpline<C, I>)spline.values().get(index), spline.derivatives()[index])
+-                              )
++                              .mapToObj(index -> new Point<>(spline.locations()[index], spline.values().get(index), spline.derivatives()[index])) // Pencil - decompile fix
+                               .toList()
+                      )
+                )
+                .apply(instance, (locationFunction, splines) -> {
+                   float[] fs = new float[splines.size()];
+-                  com.google.common.collect.ImmutableList.Builder<CubicSpline<C, I>> builder = ImmutableList.builder();
++                 ImmutableList.Builder<CubicSpline<C, I>> builder = ImmutableList.builder(); // Pencil - decompile fix
+                   float[] gs = new float[splines.size()];
+ 
+                   for (int i = 0; i < splines.size(); i++) {
+-                     Point<C, I> lv = (Point<C, I>)splines.get(i);
++                    Point<C, I> lv = splines.get(i); // Pencil - decompile fix
+                      fs[i] = lv.location();
+                      builder.add(lv.value());
+                      gs[i] = lv.derivative();
+                   }
+ 
+-                  return CubicSpline.Multipoint.create((I)locationFunction, fs, builder.build(), gs);
++                 return CubicSpline.Multipoint.create(locationFunction, fs, builder.build(), gs); // Pencil - decompile fix
+                })
+       );
+       mutableObject.setValue(
+          Codec.either(Codec.FLOAT, codec2)
+             .xmap(
+-               either -> (CubicSpline)either.map(CubicSpline.Constant::new, spline -> spline),
+-               spline -> spline instanceof CubicSpline.Constant<C, I> constant ? Either.left(constant.value()) : Either.right((CubicSpline.Multipoint)spline)
++                // Pencil start - decompile fix
++                  either -> either.map(CubicSpline.Constant::new, spline -> spline),
++                  spline -> spline instanceof CubicSpline.Constant<C, I> constant
++                      ? Either.left(constant.value())
++                      : Either.right((CubicSpline.Multipoint<C, I>)spline)
++                // Pencil end
+             )
+       );
+       return (Codec<CubicSpline<C, I>>)mutableObject.getValue();
 diff --git a/src/main/java/net/minecraft/util/ExtraCodecs.java b/src/main/java/net/minecraft/util/ExtraCodecs.java
 index a48360a..7664280 100644
 --- a/src/main/java/net/minecraft/util/ExtraCodecs.java
@@ -817,6 +1209,19 @@ index a48360a..7664280 100644
           }
        };
     }
+diff --git a/src/main/java/net/minecraft/util/LowerCaseEnumTypeAdapterFactory.java b/src/main/java/net/minecraft/util/LowerCaseEnumTypeAdapterFactory.java
+index 8692e21..d894ab2 100644
+--- a/src/main/java/net/minecraft/util/LowerCaseEnumTypeAdapterFactory.java
++++ b/src/main/java/net/minecraft/util/LowerCaseEnumTypeAdapterFactory.java
+@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
+ public class LowerCaseEnumTypeAdapterFactory implements TypeAdapterFactory {
+    @Nullable
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
+-      Class<T> class_ = typeToken.getRawType();
++      Class<T> class_ = (Class<T>)typeToken.getRawType(); // Pencil - decompile fix
+       if (!class_.isEnum()) {
+          return null;
+       } else {
 diff --git a/src/main/java/net/minecraft/util/SortedArraySet.java b/src/main/java/net/minecraft/util/SortedArraySet.java
 index 1897e9a..a6d1ab8 100644
 --- a/src/main/java/net/minecraft/util/SortedArraySet.java
@@ -830,6 +1235,1280 @@ index 1897e9a..a6d1ab8 100644
     }
  
     public static <T> SortedArraySet<T> create(Comparator<T> comparator) {
+diff --git a/src/main/java/net/minecraft/util/datafix/DataFixers.java b/src/main/java/net/minecraft/util/datafix/DataFixers.java
+index e4e2731..51c267b 100644
+--- a/src/main/java/net/minecraft/util/datafix/DataFixers.java
++++ b/src/main/java/net/minecraft/util/datafix/DataFixers.java
+@@ -798,7 +798,7 @@ public class DataFixers {
+             schema112,
+             "Attribute renames",
+             createRenamerNoNamespace(
+-               ImmutableMap.builder()
++               ImmutableMap.<String, String>builder() // Pencil - decompile fix
+                   .put("generic.maxHealth", "minecraft:generic.max_health")
+                   .put("Max Health", "minecraft:generic.max_health")
+                   .put("zombie.spawnReinforcements", "minecraft:zombie.spawn_reinforcements")
+@@ -887,7 +887,7 @@ public class DataFixers {
+       builder.addFixer(new AddNewChoices(schema131, "Added Glow Squid", References.ENTITY));
+       builder.addFixer(new AddNewChoices(schema131, "Added Glow Item Frame", References.ENTITY));
+       Schema schema132 = builder.addSchema(2690, SAME_NAMESPACED);
+-      ImmutableMap<String, String> immutableMap = ImmutableMap.builder()
++      ImmutableMap<String, String> immutableMap = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+          .put("minecraft:weathered_copper_block", "minecraft:oxidized_copper_block")
+          .put("minecraft:semi_weathered_copper_block", "minecraft:weathered_copper_block")
+          .put("minecraft:lightly_weathered_copper_block", "minecraft:exposed_copper_block")
+@@ -912,7 +912,7 @@ public class DataFixers {
+       builder.addFixer(ItemRenameFix.create(schema132, "Renamed copper block items to new oxidized terms", createRenamer(immutableMap)));
+       builder.addFixer(BlockRenameFix.create(schema132, "Renamed copper blocks to new oxidized terms", createRenamer(immutableMap)));
+       Schema schema133 = builder.addSchema(2691, SAME_NAMESPACED);
+-      ImmutableMap<String, String> immutableMap2 = ImmutableMap.builder()
++      ImmutableMap<String, String> immutableMap2 = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+          .put("minecraft:waxed_copper", "minecraft:waxed_copper_block")
+          .put("minecraft:oxidized_copper_block", "minecraft:oxidized_copper")
+          .put("minecraft:weathered_copper_block", "minecraft:weathered_copper")
+@@ -923,7 +923,7 @@ public class DataFixers {
+       Schema schema134 = builder.addSchema(2693, SAME_NAMESPACED);
+       builder.addFixer(new AddFlagIfNotPresentFix(schema134, References.WORLD_GEN_SETTINGS, "has_increased_height_already", false));
+       Schema schema135 = builder.addSchema(2696, SAME_NAMESPACED);
+-      ImmutableMap<String, String> immutableMap3 = ImmutableMap.builder()
++      ImmutableMap<String, String> immutableMap3 = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+          .put("minecraft:grimstone", "minecraft:deepslate")
+          .put("minecraft:grimstone_slab", "minecraft:cobbled_deepslate_slab")
+          .put("minecraft:grimstone_stairs", "minecraft:cobbled_deepslate_stairs")
+@@ -1043,7 +1043,7 @@ public class DataFixers {
+             "game_event_renames_3084",
+             References.GAME_EVENT_NAME,
+             createRenamer(
+-               ImmutableMap.builder()
++               ImmutableMap.<String, String>builder() // Pencil - decompile fix
+                   .put("minecraft:block_press", "minecraft:block_activate")
+                   .put("minecraft:block_switch", "minecraft:block_activate")
+                   .put("minecraft:block_unpress", "minecraft:block_deactivate")
+@@ -1064,25 +1064,28 @@ public class DataFixers {
+          )
+       );
+       Schema schema162 = builder.addSchema(3086, SAME_NAMESPACED);
++      // Pencil start - decompile error
++      Int2ObjectOpenHashMap<String> int2objectopenhashmap = (Int2ObjectOpenHashMap) Util.make(new Int2ObjectOpenHashMap(), (int2objectopenhashmap1) -> {
++         int2objectopenhashmap1.defaultReturnValue("minecraft:tabby");
++         int2objectopenhashmap1.put(0, "minecraft:tabby");
++         int2objectopenhashmap1.put(1, "minecraft:black");
++         int2objectopenhashmap1.put(2, "minecraft:red");
++         int2objectopenhashmap1.put(3, "minecraft:siamese");
++         int2objectopenhashmap1.put(4, "minecraft:british");
++         int2objectopenhashmap1.put(5, "minecraft:calico");
++         int2objectopenhashmap1.put(6, "minecraft:persian");
++         int2objectopenhashmap1.put(7, "minecraft:ragdoll");
++         int2objectopenhashmap1.put(8, "minecraft:white");
++         int2objectopenhashmap1.put(9, "minecraft:jellie");
++         int2objectopenhashmap1.put(10, "minecraft:all_black");
++      });
+       builder.addFixer(
+          new EntityVariantFix(
+-            schema162, "Change cat variant type", References.ENTITY, "minecraft:cat", "CatType", Util.make(new Int2ObjectOpenHashMap(), catVariants -> {
+-               catVariants.defaultReturnValue("minecraft:tabby");
+-               catVariants.put(0, "minecraft:tabby");
+-               catVariants.put(1, "minecraft:black");
+-               catVariants.put(2, "minecraft:red");
+-               catVariants.put(3, "minecraft:siamese");
+-               catVariants.put(4, "minecraft:british");
+-               catVariants.put(5, "minecraft:calico");
+-               catVariants.put(6, "minecraft:persian");
+-               catVariants.put(7, "minecraft:ragdoll");
+-               catVariants.put(8, "minecraft:white");
+-               catVariants.put(9, "minecraft:jellie");
+-               catVariants.put(10, "minecraft:all_black");
+-            })::get
++            schema162, "Change cat variant type", References.ENTITY, "minecraft:cat", "CatType", int2objectopenhashmap::get
++      // Pencil end
+          )
+       );
+-      ImmutableMap<String, String> immutableMap4 = ImmutableMap.builder()
++      ImmutableMap<String, String> immutableMap4 = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+          .put("textures/entity/cat/tabby.png", "minecraft:tabby")
+          .put("textures/entity/cat/black.png", "minecraft:black")
+          .put("textures/entity/cat/red.png", "minecraft:red")
+@@ -1104,13 +1107,16 @@ public class DataFixers {
+          )
+       );
+       Schema schema163 = builder.addSchema(3087, SAME_NAMESPACED);
++      // Pencil start - decompile errr
++      int2objectopenhashmap = (Int2ObjectOpenHashMap) Util.make(new Int2ObjectOpenHashMap(), (int2objectopenhashmap1) -> {
++         int2objectopenhashmap1.put(0, "minecraft:temperate");
++         int2objectopenhashmap1.put(1, "minecraft:warm");
++         int2objectopenhashmap1.put(2, "minecraft:cold");
++      });
++      // Pencil end
+       builder.addFixer(
+          new EntityVariantFix(
+-            schema163, "Change frog variant type", References.ENTITY, "minecraft:frog", "Variant", Util.make(new Int2ObjectOpenHashMap(), frogVariants -> {
+-               frogVariants.put(0, "minecraft:temperate");
+-               frogVariants.put(1, "minecraft:warm");
+-               frogVariants.put(2, "minecraft:cold");
+-            })::get
++            schema163, "Change frog variant type", References.ENTITY, "minecraft:frog", "Variant", int2objectopenhashmap::get // Pencil - decompile error
+          )
+       );
+       Schema schema164 = builder.addSchema(3090, SAME_NAMESPACED);
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/AddNewChoices.java b/src/main/java/net/minecraft/util/datafix/fixes/AddNewChoices.java
+index 033171e..019d64a 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/AddNewChoices.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/AddNewChoices.java
+@@ -4,7 +4,11 @@ import com.mojang.datafixers.DataFix;
+ import com.mojang.datafixers.TypeRewriteRule;
+ import com.mojang.datafixers.DSL.TypeReference;
+ import com.mojang.datafixers.schemas.Schema;
++import com.mojang.datafixers.types.Type;
++import com.mojang.datafixers.types.templates.TaggedChoice;
+ import com.mojang.datafixers.types.templates.TaggedChoice.TaggedChoiceType;
++import com.mojang.datafixers.util.Pair;
++
+ import java.util.Locale;
+ 
+ public class AddNewChoices extends DataFix {
+@@ -23,24 +27,18 @@ public class AddNewChoices extends DataFix {
+       return this.cap(taggedChoiceType, taggedChoiceType2);
+    }
+ 
+-   private <K> TypeRewriteRule cap(TaggedChoiceType<K> inputChoiceType, TaggedChoiceType<?> outputChoiceType) {
++   private <K> TypeRewriteRule cap(TaggedChoice.TaggedChoiceType<K> inputChoiceType, TaggedChoice.TaggedChoiceType<?> outputChoiceType) {
+       if (inputChoiceType.getKeyType() != outputChoiceType.getKeyType()) {
+          throw new IllegalStateException("Could not inject: key type is not the same");
+-      } else {
+-         return this.fixTypeEverywhere(
+-            this.name,
+-            inputChoiceType,
+-            outputChoiceType,
+-            dynamicOps -> pair -> {
+-                  if (!outputChoiceType.hasType(pair.getFirst())) {
+-                     throw new IllegalArgumentException(
+-                        String.format(Locale.ROOT, "%s: Unknown type %s in '%s'", this.name, pair.getFirst(), this.type.typeName())
+-                     );
+-                  } else {
+-                     return pair;
+-                  }
+-               }
+-         );
++      // Pencil start - decompile fix
+       }
++      TaggedChoice.TaggedChoiceType<K> taggedChoiceType = (TaggedChoiceType<K>) outputChoiceType;
++      return this.fixTypeEverywhere(this.name, inputChoiceType, taggedChoiceType, dynamicOps -> pair -> {
++         if (!(taggedChoiceType.hasType(pair.getFirst()))) {
++            throw new IllegalArgumentException(String.format(Locale.ROOT, "%s: Unknown type %s in '%s'", this.name, pair.getFirst(), this.type.typeName()));
++         }
++         return pair;
++      });
++      // Pencil end
+    }
+ }
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/AdvancementsFix.java b/src/main/java/net/minecraft/util/datafix/fixes/AdvancementsFix.java
+index 44dbeb8..0034be7 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/AdvancementsFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/AdvancementsFix.java
+@@ -5,7 +5,7 @@ import com.mojang.datafixers.schemas.Schema;
+ import java.util.Map;
+ 
+ public class AdvancementsFix extends AdvancementsRenameFix {
+-   private static final Map<String, String> RENAMES = ImmutableMap.builder()
++   private static final Map<String, String> RENAMES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:recipes/brewing/speckled_melon", "minecraft:recipes/brewing/glistering_melon_slice")
+       .put("minecraft:recipes/building_blocks/black_stained_hardened_clay", "minecraft:recipes/building_blocks/black_terracotta")
+       .put("minecraft:recipes/building_blocks/blue_stained_hardened_clay", "minecraft:recipes/building_blocks/blue_terracotta")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/AttributeModifierIdFix.java b/src/main/java/net/minecraft/util/datafix/fixes/AttributeModifierIdFix.java
+index 8d1cd87..b0a1533 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/AttributeModifierIdFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/AttributeModifierIdFix.java
+@@ -18,7 +18,7 @@ import java.util.stream.Stream;
+ import javax.annotation.Nullable;
+ 
+ public class AttributeModifierIdFix extends DataFix {
+-   private static final Map<UUID, String> ID_MAP = ImmutableMap.builder()
++   private static final Map<UUID, String> ID_MAP = ImmutableMap.<UUID, String>builder() // Pencil - decompile fix
+       .put(UUID.fromString("736565d2-e1a7-403d-a3f8-1aeb3e302542"), "minecraft:creative_mode_block_range")
+       .put(UUID.fromString("98491ef6-97b1-4584-ae82-71a8cc85cf73"), "minecraft:creative_mode_entity_range")
+       .put(UUID.fromString("91AEAA56-376B-4498-935B-2F7F68070635"), "minecraft:effect.speed")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/BiomeFix.java b/src/main/java/net/minecraft/util/datafix/fixes/BiomeFix.java
+index 0bce4c9..5189c94 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/BiomeFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/BiomeFix.java
+@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
+ import java.util.Map;
+ 
+ public class BiomeFix {
+-   public static final Map<String, String> BIOMES = ImmutableMap.builder()
++   public static final Map<String, String> BIOMES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:extreme_hills", "minecraft:mountains")
+       .put("minecraft:swampland", "minecraft:swamp")
+       .put("minecraft:hell", "minecraft:nether_wastes")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityIdFix.java b/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityIdFix.java
+index 9fee9da..380261f 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityIdFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityIdFix.java
+@@ -10,7 +10,7 @@ import com.mojang.datafixers.types.templates.TaggedChoice.TaggedChoiceType;
+ import java.util.Map;
+ 
+ public class BlockEntityIdFix extends DataFix {
+-   private static final Map<String, String> ID_MAP = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   private static final Map<String, String> ID_MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       map.put("Airportal", "minecraft:end_portal");
+       map.put("Banner", "minecraft:banner");
+       map.put("Beacon", "minecraft:beacon");
+@@ -43,8 +43,8 @@ public class BlockEntityIdFix extends DataFix {
+    public TypeRewriteRule makeRule() {
+       Type<?> type = this.getInputSchema().getType(References.ITEM_STACK);
+       Type<?> type2 = this.getOutputSchema().getType(References.ITEM_STACK);
+-      TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(References.BLOCK_ENTITY);
+-      TaggedChoiceType<String> taggedChoiceType2 = this.getOutputSchema().findChoiceType(References.BLOCK_ENTITY);
++      TaggedChoiceType<String> taggedChoiceType = (TaggedChoiceType<String>) this.getInputSchema().findChoiceType(References.BLOCK_ENTITY); // Pencil - decompile fix
++      TaggedChoiceType<String> taggedChoiceType2 = (TaggedChoiceType<String>) this.getOutputSchema().findChoiceType(References.BLOCK_ENTITY); // Pencil - decompile fix
+       return TypeRewriteRule.seq(
+          this.convertUnchecked("item stack block entity name hook converter", type, type2),
+          this.fixTypeEverywhere(
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityRenameFix.java b/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityRenameFix.java
+index 87bd89d..1f30560 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityRenameFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityRenameFix.java
+@@ -17,8 +17,8 @@ public class BlockEntityRenameFix extends DataFix {
+    }
+ 
+    public TypeRewriteRule makeRule() {
+-      TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(References.BLOCK_ENTITY);
+-      TaggedChoiceType<String> taggedChoiceType2 = this.getOutputSchema().findChoiceType(References.BLOCK_ENTITY);
++      TaggedChoiceType<String> taggedChoiceType = (TaggedChoiceType<String>) this.getInputSchema().findChoiceType(References.BLOCK_ENTITY); // Pencil - decompile fix
++      TaggedChoiceType<String> taggedChoiceType2 = (TaggedChoiceType<String>) this.getOutputSchema().findChoiceType(References.BLOCK_ENTITY); // Pencil - decompile fix
+       return this.fixTypeEverywhere(this.name, taggedChoiceType, taggedChoiceType2, ops -> pair -> pair.mapFirst(this.nameChangeLookup));
+    }
+ 
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityUUIDFix.java b/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityUUIDFix.java
+index 8bfb8f9..3b50777 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityUUIDFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/BlockEntityUUIDFix.java
+@@ -22,7 +22,7 @@ public class BlockEntityUUIDFix extends AbstractUUIDFix {
+          .map(ownerDynamic -> replaceUUIDString(ownerDynamic, "Id", "Id").orElse(ownerDynamic))
+          .map(ownerDynamic -> skullDynamic.remove("Owner").set("SkullOwner", ownerDynamic))
+          .result()
+-         .orElse(skullDynamic);
++         .orElse((Dynamic) skullDynamic); // Pencil - decompile fix
+    }
+ 
+    private Dynamic<?> updateConduit(Dynamic<?> conduitDynamic) {
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/CavesAndCliffsRenames.java b/src/main/java/net/minecraft/util/datafix/fixes/CavesAndCliffsRenames.java
+index de3d43a..f8c4a03 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/CavesAndCliffsRenames.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/CavesAndCliffsRenames.java
+@@ -3,7 +3,7 @@ package net.minecraft.util.datafix.fixes;
+ import com.google.common.collect.ImmutableMap;
+ 
+ public final class CavesAndCliffsRenames {
+-   public static final ImmutableMap<String, String> RENAMES = ImmutableMap.builder()
++   public static final ImmutableMap<String, String> RENAMES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:badlands_plateau", "minecraft:badlands")
+       .put("minecraft:bamboo_jungle_hills", "minecraft:bamboo_jungle")
+       .put("minecraft:birch_forest_hills", "minecraft:birch_forest")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ChestedHorsesInventoryZeroIndexingFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ChestedHorsesInventoryZeroIndexingFix.java
+index 24365be..61eef53 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ChestedHorsesInventoryZeroIndexingFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ChestedHorsesInventoryZeroIndexingFix.java
+@@ -18,7 +18,10 @@ public class ChestedHorsesInventoryZeroIndexingFix extends DataFix {
+ 
+    protected TypeRewriteRule makeRule() {
+       OpticFinder<Pair<String, Pair<Either<Pair<String, String>, Unit>, Pair<Either<?, Unit>, Dynamic<?>>>>> opticFinder = DSL.typeFinder(
+-         this.getInputSchema().getType(References.ITEM_STACK)
++          // Pencil start - decompile fix
++           (Type<Pair<String, Pair<Either<Pair<String, String>, Unit>, Pair<Either<?, Unit>, Dynamic<?>>>>>)this.getInputSchema()
++               .getType(References.ITEM_STACK)
++          // Pencil end
+       );
+       Type<?> type = this.getInputSchema().getType(References.ENTITY);
+       return TypeRewriteRule.seq(
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ChunkBedBlockEntityInjecterFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ChunkBedBlockEntityInjecterFix.java
+index d75f32c..123ff5e 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ChunkBedBlockEntityInjecterFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ChunkBedBlockEntityInjecterFix.java
+@@ -11,6 +11,7 @@ import com.mojang.datafixers.Typed;
+ import com.mojang.datafixers.schemas.Schema;
+ import com.mojang.datafixers.types.Type;
+ import com.mojang.datafixers.types.templates.List.ListType;
++import com.mojang.datafixers.types.templates.TaggedChoice;
+ import com.mojang.datafixers.util.Pair;
+ import com.mojang.serialization.Dynamic;
+ import java.util.List;
+@@ -40,8 +41,8 @@ public class ChunkBedBlockEntityInjecterFix extends DataFix {
+       return TypeRewriteRule.seq(
+          this.fixTypeEverywhere(
+             "InjectBedBlockEntityType",
+-            this.getInputSchema().findChoiceType(References.BLOCK_ENTITY),
+-            this.getOutputSchema().findChoiceType(References.BLOCK_ENTITY),
++             (TaggedChoice.TaggedChoiceType<String>) this.getInputSchema().findChoiceType(References.BLOCK_ENTITY), // Pencil - decompile fix
++             (TaggedChoice.TaggedChoiceType<String>) this.getOutputSchema().findChoiceType(References.BLOCK_ENTITY), // Pencil - decompile fix
+             dynamicOps -> pair -> pair
+          ),
+          this.fixTypeEverywhereTyped(
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ChunkHeightAndBiomeFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ChunkHeightAndBiomeFix.java
+index d325bb3..f826174 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ChunkHeightAndBiomeFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ChunkHeightAndBiomeFix.java
+@@ -228,7 +228,10 @@ public class ChunkHeightAndBiomeFix extends DataFix {
+       } else if (is != null && is.length == 1024) {
+          for (int l = 0; l < 16; l++) {
+             int m = l - i;
+-            dynamics[m] = makeBiomeContainer(level, sectionY -> getOldBiome(is, l * 64 + sectionY));
++            // Pencil start - decompile fix
++            final int f_i = l;
++            dynamics[m] = makeBiomeContainer(level, i4 -> getOldBiome(is, f_i * 64 + i4));
++            // Pencil end
+          }
+ 
+          if (overworld) {
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ChunkPalettedStorageFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ChunkPalettedStorageFix.java
+index 8f8b343..14704a0 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ChunkPalettedStorageFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ChunkPalettedStorageFix.java
+@@ -53,7 +53,7 @@ public class ChunkPalettedStorageFix extends DataFix {
+    static final Dynamic<?> UPPER_LARGE_FERN = BlockStateData.parse("{Name:'minecraft:large_fern',Properties:{half:'upper'}}");
+    static final Dynamic<?> UPPER_ROSE_BUSH = BlockStateData.parse("{Name:'minecraft:rose_bush',Properties:{half:'upper'}}");
+    static final Dynamic<?> UPPER_PEONY = BlockStateData.parse("{Name:'minecraft:peony',Properties:{half:'upper'}}");
+-   static final Map<String, Dynamic<?>> FLOWER_POT_MAP = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   static final Map<String, Dynamic<?>> FLOWER_POT_MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       map.put("minecraft:air0", BlockStateData.parse("{Name:'minecraft:flower_pot'}"));
+       map.put("minecraft:red_flower0", BlockStateData.parse("{Name:'minecraft:potted_poppy'}"));
+       map.put("minecraft:red_flower1", BlockStateData.parse("{Name:'minecraft:potted_blue_orchid'}"));
+@@ -77,7 +77,7 @@ public class ChunkPalettedStorageFix extends DataFix {
+       map.put("minecraft:tallgrass2", BlockStateData.parse("{Name:'minecraft:potted_fern'}"));
+       map.put("minecraft:cactus0", BlockStateData.getTag(2240));
+    });
+-   static final Map<String, Dynamic<?>> SKULL_MAP = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   static final Map<String, Dynamic<?>> SKULL_MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       mapSkull(map, 0, "skeleton", "skull");
+       mapSkull(map, 1, "wither_skeleton", "skull");
+       mapSkull(map, 2, "zombie", "head");
+@@ -85,7 +85,7 @@ public class ChunkPalettedStorageFix extends DataFix {
+       mapSkull(map, 4, "creeper", "head");
+       mapSkull(map, 5, "dragon", "head");
+    });
+-   static final Map<String, Dynamic<?>> DOOR_MAP = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   static final Map<String, Dynamic<?>> DOOR_MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       mapDoor(map, "oak_door", 1024);
+       mapDoor(map, "iron_door", 1136);
+       mapDoor(map, "spruce_door", 3088);
+@@ -94,13 +94,13 @@ public class ChunkPalettedStorageFix extends DataFix {
+       mapDoor(map, "acacia_door", 3136);
+       mapDoor(map, "dark_oak_door", 3152);
+    });
+-   static final Map<String, Dynamic<?>> NOTE_BLOCK_MAP = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   static final Map<String, Dynamic<?>> NOTE_BLOCK_MAP = DataFixUtils.make(Maps.newHashMap(), map -> {
+       for (int i = 0; i < 26; i++) {
+          map.put("true" + i, BlockStateData.parse("{Name:'minecraft:note_block',Properties:{powered:'true',note:'" + i + "'}}"));
+          map.put("false" + i, BlockStateData.parse("{Name:'minecraft:note_block',Properties:{powered:'false',note:'" + i + "'}}"));
+       }
+    });
+-   private static final Int2ObjectMap<String> DYE_COLOR_MAP = (Int2ObjectMap<String>)DataFixUtils.make(new Int2ObjectOpenHashMap(), map -> {
++   private static final Int2ObjectMap<String> DYE_COLOR_MAP = DataFixUtils.make(new Int2ObjectOpenHashMap(), map -> {
+       map.put(0, "white");
+       map.put(1, "orange");
+       map.put(2, "magenta");
+@@ -118,7 +118,7 @@ public class ChunkPalettedStorageFix extends DataFix {
+       map.put(14, "red");
+       map.put(15, "black");
+    });
+-   static final Map<String, Dynamic<?>> BED_BLOCK_MAP = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   static final Map<String, Dynamic<?>> BED_BLOCK_MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       ObjectIterator var1 = DYE_COLOR_MAP.int2ObjectEntrySet().iterator();
+ 
+       while (var1.hasNext()) {
+@@ -128,7 +128,7 @@ public class ChunkPalettedStorageFix extends DataFix {
+          }
+       }
+    });
+-   static final Map<String, Dynamic<?>> BANNER_BLOCK_MAP = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   static final Map<String, Dynamic<?>> BANNER_BLOCK_MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       ObjectIterator var1 = DYE_COLOR_MAP.int2ObjectEntrySet().iterator();
+ 
+       while (var1.hasNext()) {
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ChunkProtoTickListFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ChunkProtoTickListFix.java
+index 0357a39..a7364f7 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ChunkProtoTickListFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ChunkProtoTickListFix.java
+@@ -187,7 +187,7 @@ public class ChunkProtoTickListFix extends DataFix {
+       int k = packedLocalPos >>> 8 & 15;
+       String string = blockIdGetter.apply(sectionSupplier != null ? sectionSupplier.get().get(i, j, k) : null);
+       return levelDynamic.createMap(
+-         ImmutableMap.builder()
++         ImmutableMap.<Dynamic<?>, Dynamic<?>>builder() // Pencil - decompile fix
+             .put(levelDynamic.createString("i"), levelDynamic.createString(string))
+             .put(levelDynamic.createString("x"), levelDynamic.createInt(sectionX * 16 + i))
+             .put(levelDynamic.createString("y"), levelDynamic.createInt(sectionY * 16 + j))
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ChunkStatusFix2.java b/src/main/java/net/minecraft/util/datafix/fixes/ChunkStatusFix2.java
+index 405cd0e..c601848 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ChunkStatusFix2.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ChunkStatusFix2.java
+@@ -12,7 +12,7 @@ import java.util.Map;
+ import java.util.Objects;
+ 
+ public class ChunkStatusFix2 extends DataFix {
+-   private static final Map<String, String> RENAMES_AND_DOWNGRADES = ImmutableMap.builder()
++   private static final Map<String, String> RENAMES_AND_DOWNGRADES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("structure_references", "empty")
+       .put("biomes", "empty")
+       .put("base", "surface")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ChunkStructuresTemplateRenameFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ChunkStructuresTemplateRenameFix.java
+index 7234c99..ded4b40 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ChunkStructuresTemplateRenameFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ChunkStructuresTemplateRenameFix.java
+@@ -10,19 +10,19 @@ import com.mojang.datafixers.util.Pair;
+ import com.mojang.serialization.Dynamic;
+ 
+ public class ChunkStructuresTemplateRenameFix extends DataFix {
+-   private static final ImmutableMap<String, Pair<String, ImmutableMap<String, String>>> RENAMES = ImmutableMap.builder()
++   private static final ImmutableMap<String, Pair<String, ImmutableMap<String, String>>> RENAMES = ImmutableMap.<String, Pair<String, ImmutableMap<String, String>>>builder() // Pencil - decompile fix
+       .put(
+          "EndCity",
+          Pair.of(
+             "ECP",
+-            ImmutableMap.builder().put("second_floor", "second_floor_1").put("third_floor", "third_floor_1").put("third_floor_c", "third_floor_2").build()
++            ImmutableMap.<String, String>builder().put("second_floor", "second_floor_1").put("third_floor", "third_floor_1").put("third_floor_c", "third_floor_2").build() // Pencil - decompile fix
+          )
+       )
+       .put(
+          "Mansion",
+          Pair.of(
+             "WMP",
+-            ImmutableMap.builder()
++            ImmutableMap.<String, String>builder() // Pencil - decompile fix
+                .put("carpet_south", "carpet_south_1")
+                .put("carpet_west", "carpet_west_1")
+                .put("indoors_door", "indoors_door_1")
+@@ -34,7 +34,7 @@ public class ChunkStructuresTemplateRenameFix extends DataFix {
+          "Igloo",
+          Pair.of(
+             "Iglu",
+-            ImmutableMap.builder()
++            ImmutableMap.<String, String>builder() // Pencil - decompile fix
+                .put("minecraft:igloo/igloo_bottom", "minecraft:igloo/bottom")
+                .put("minecraft:igloo/igloo_middle", "minecraft:igloo/middle")
+                .put("minecraft:igloo/igloo_top", "minecraft:igloo/top")
+@@ -45,7 +45,7 @@ public class ChunkStructuresTemplateRenameFix extends DataFix {
+          "Ocean_Ruin",
+          Pair.of(
+             "ORP",
+-            ImmutableMap.builder()
++            ImmutableMap.<String, String>builder() // Pencil - decompile fix
+                .put("minecraft:ruin/big_ruin1_brick", "minecraft:underwater_ruin/big_brick_1")
+                .put("minecraft:ruin/big_ruin2_brick", "minecraft:underwater_ruin/big_brick_2")
+                .put("minecraft:ruin/big_ruin3_brick", "minecraft:underwater_ruin/big_brick_3")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/DyeItemRenameFix.java b/src/main/java/net/minecraft/util/datafix/fixes/DyeItemRenameFix.java
+index 16dc60a..63fdbdb 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/DyeItemRenameFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/DyeItemRenameFix.java
+@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
+ import java.util.Map;
+ 
+ public class DyeItemRenameFix {
+-   public static final Map<String, String> RENAMED_IDS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_IDS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:cactus_green", "minecraft:green_dye")
+       .put("minecraft:rose_red", "minecraft:red_dye")
+       .put("minecraft:dandelion_yellow", "minecraft:yellow_dye")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EmptyItemInHotbarFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EmptyItemInHotbarFix.java
+index e3cde08..fcfdce5 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EmptyItemInHotbarFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EmptyItemInHotbarFix.java
+@@ -5,6 +5,7 @@ import com.mojang.datafixers.DataFix;
+ import com.mojang.datafixers.OpticFinder;
+ import com.mojang.datafixers.TypeRewriteRule;
+ import com.mojang.datafixers.schemas.Schema;
++import com.mojang.datafixers.types.Type;
+ import com.mojang.datafixers.util.Either;
+ import com.mojang.datafixers.util.Pair;
+ import com.mojang.datafixers.util.Unit;
+@@ -18,13 +19,16 @@ public class EmptyItemInHotbarFix extends DataFix {
+ 
+    public TypeRewriteRule makeRule() {
+       OpticFinder<Pair<String, Pair<Either<Pair<String, String>, Unit>, Pair<Either<?, Unit>, Dynamic<?>>>>> opticFinder = DSL.typeFinder(
+-         this.getInputSchema().getType(References.ITEM_STACK)
++          // Pencil start - decompile fix
++           (Type<Pair<String, Pair<Either<Pair<String, String>, Unit>, Pair<Either<?, Unit>, Dynamic<?>>>>>)this.getInputSchema()
++               .getType(References.ITEM_STACK)
++          // Pencil end
+       );
+       return this.fixTypeEverywhereTyped(
+          "EmptyItemInHotbarFix",
+          this.getInputSchema().getType(References.HOTBAR),
+          hotbarTyped -> hotbarTyped.update(opticFinder, pair -> pair.mapSecond(pairx -> {
+-                  Optional<String> optional = ((Either)pairx.getFirst()).left().map(Pair::getSecond);
++                  Optional<String> optional = (pairx.getFirst()).left().map(Pair::getSecond); // Pencil - decompile fix
+                   Dynamic<?> dynamic = (Dynamic<?>)((Pair)pairx.getSecond()).getSecond();
+                   boolean bl = optional.isEmpty() || optional.get().equals("minecraft:air");
+                   boolean bl2 = dynamic.get("Count").asInt(0) <= 0;
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityBlockStateFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityBlockStateFix.java
+index 9e80fd5..73a1c13 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityBlockStateFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityBlockStateFix.java
+@@ -18,7 +18,7 @@ import java.util.function.Function;
+ import net.minecraft.util.datafix.schemas.NamespacedSchema;
+ 
+ public class EntityBlockStateFix extends DataFix {
+-   private static final Map<String, Integer> MAP = (Map<String, Integer>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   private static final Map<String, Integer> MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       map.put("minecraft:air", 0);
+       map.put("minecraft:stone", 1);
+       map.put("minecraft:grass", 2);
+@@ -333,7 +333,7 @@ public class EntityBlockStateFix extends DataFix {
+       );
+       Dynamic<?> dynamic = (Dynamic<?>)fallingBlock.get(DSL.remainderFinder());
+       return fallingBlock.update(type.finder(), type2, state -> {
+-         int i = (Integer)state.map(pair -> (Integer)((Either)pair.getSecond()).map(id -> id, EntityBlockStateFix::getBlockId), unit -> {
++         int i = state.map(pair -> pair.getSecond().map(id -> (Integer)id, EntityBlockStateFix::getBlockId), unit -> { // Pencil - decompile fix
+             Optional<Number> optional = dynamic.get("TileID").asNumber().result();
+             return optional.map(Number::intValue).orElseGet(() -> dynamic.get("Tile").asByte((byte)0) & 0xFF);
+          });
+@@ -349,7 +349,7 @@ public class EntityBlockStateFix extends DataFix {
+       Type<Pair<String, Dynamic<?>>> type2 = DSL.field(newStateKey, DSL.named(References.BLOCK_STATE.typeName(), DSL.remainderType()));
+       Dynamic<?> dynamic = (Dynamic<?>)entity.getOrCreate(DSL.remainderFinder());
+       return entity.update(type.finder(), type2, state -> {
+-         int i = (Integer)((Either)state.getSecond()).map(id -> id, EntityBlockStateFix::getBlockId);
++         int i = state.getSecond().map(id -> (Integer)id, EntityBlockStateFix::getBlockId); // Pencil - decompile fix
+          int j = dynamic.get(oldDataKey).asInt(0) & 15;
+          return Pair.of(References.BLOCK_STATE.typeName(), BlockStateData.getTag(i << 4 | j));
+       }).set(DSL.remainderFinder(), dynamic.remove(oldDataKey));
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityCodSalmonFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityCodSalmonFix.java
+index 417e3d1..fa42cd5 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityCodSalmonFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityCodSalmonFix.java
+@@ -5,11 +5,11 @@ import com.mojang.datafixers.schemas.Schema;
+ import java.util.Map;
+ 
+ public class EntityCodSalmonFix extends SimplestEntityRenameFix {
+-   public static final Map<String, String> RENAMED_IDS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_IDS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:salmon_mob", "minecraft:salmon")
+       .put("minecraft:cod_mob", "minecraft:cod")
+       .build();
+-   public static final Map<String, String> RENAMED_EGG_IDS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_EGG_IDS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:salmon_mob_spawn_egg", "minecraft:salmon_spawn_egg")
+       .put("minecraft:cod_mob_spawn_egg", "minecraft:cod_spawn_egg")
+       .build();
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityEquipmentToArmorAndHandFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityEquipmentToArmorAndHandFix.java
+index 406c246..53bdfc0 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityEquipmentToArmorAndHandFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityEquipmentToArmorAndHandFix.java
+@@ -52,11 +52,11 @@ public class EntityEquipmentToArmorAndHandFix extends DataFix {
+                      .orElseThrow(() -> new IllegalStateException("Could not parse newly created empty itemstack.")))
+                   .getFirst();
+                if (!list.isEmpty()) {
+-                  either = Either.left(Lists.newArrayList(new Object[]{list.get(0), object}));
++                  either = Either.left(Lists.newArrayList(list.get(0), object)); // Pencil - decompile fix
+                }
+ 
+                if (list.size() > 1) {
+-                  List<IS> list2 = Lists.newArrayList(new Object[]{object, object, object, object});
++                  List<IS> list2 = Lists.newArrayList(object, object, object, object); // Pencil - decompile fix
+ 
+                   for (int i = 1; i < Math.min(list.size(), 5); i++) {
+                      list2.set(i - 1, list.get(i));
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityIdFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityIdFix.java
+index f5e5f8e..ba4b770 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityIdFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityIdFix.java
+@@ -10,7 +10,7 @@ import com.mojang.datafixers.types.templates.TaggedChoice.TaggedChoiceType;
+ import java.util.Map;
+ 
+ public class EntityIdFix extends DataFix {
+-   private static final Map<String, String> ID_MAP = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   private static final Map<String, String> ID_MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       map.put("AreaEffectCloud", "minecraft:area_effect_cloud");
+       map.put("ArmorStand", "minecraft:armor_stand");
+       map.put("Arrow", "minecraft:arrow");
+@@ -93,8 +93,8 @@ public class EntityIdFix extends DataFix {
+    }
+ 
+    public TypeRewriteRule makeRule() {
+-      TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(References.ENTITY);
+-      TaggedChoiceType<String> taggedChoiceType2 = this.getOutputSchema().findChoiceType(References.ENTITY);
++      TaggedChoiceType<String> taggedChoiceType = (TaggedChoiceType<String>) this.getInputSchema().findChoiceType(References.ENTITY); // Pencil - decompile fix
++      TaggedChoiceType<String> taggedChoiceType2 = (TaggedChoiceType<String>) this.getOutputSchema().findChoiceType(References.ENTITY); // Pencil - decompile fix
+       Type<?> type = this.getInputSchema().getType(References.ITEM_STACK);
+       Type<?> type2 = this.getOutputSchema().getType(References.ITEM_STACK);
+       return TypeRewriteRule.seq(
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityPaintingMotiveFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityPaintingMotiveFix.java
+index 7646453..f0f4ede 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityPaintingMotiveFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityPaintingMotiveFix.java
+@@ -12,7 +12,7 @@ import java.util.Optional;
+ import net.minecraft.util.datafix.schemas.NamespacedSchema;
+ 
+ public class EntityPaintingMotiveFix extends NamedEntityFix {
+-   private static final Map<String, String> MAP = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   private static final Map<String, String> MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       map.put("donkeykong", "donkey_kong");
+       map.put("burningskull", "burning_skull");
+       map.put("skullandroses", "skull_and_roses");
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityPufferfishRenameFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityPufferfishRenameFix.java
+index 5c3d448..e6893b5 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityPufferfishRenameFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityPufferfishRenameFix.java
+@@ -6,7 +6,7 @@ import java.util.Map;
+ import java.util.Objects;
+ 
+ public class EntityPufferfishRenameFix extends SimplestEntityRenameFix {
+-   public static final Map<String, String> RENAMED_IDS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_IDS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:puffer_fish_spawn_egg", "minecraft:pufferfish_spawn_egg")
+       .build();
+ 
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityRavagerRenameFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityRavagerRenameFix.java
+index c228ca0..7383236 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityRavagerRenameFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityRavagerRenameFix.java
+@@ -6,7 +6,7 @@ import java.util.Map;
+ import java.util.Objects;
+ 
+ public class EntityRavagerRenameFix extends SimplestEntityRenameFix {
+-   public static final Map<String, String> RENAMED_IDS = ImmutableMap.builder().put("minecraft:illager_beast_spawn_egg", "minecraft:ravager_spawn_egg").build();
++   public static final Map<String, String> RENAMED_IDS = ImmutableMap.<String, String>builder().put("minecraft:illager_beast_spawn_egg", "minecraft:ravager_spawn_egg").build(); // Pencil - decompile fix
+ 
+    public EntityRavagerRenameFix(Schema outputSchema, boolean changesType) {
+       super("EntityRavagerRenameFix", outputSchema, changesType);
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityRenameFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityRenameFix.java
+index fdff06b..ca4d4d7 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityRenameFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityRenameFix.java
+@@ -19,8 +19,8 @@ public abstract class EntityRenameFix extends DataFix {
+    }
+ 
+    public TypeRewriteRule makeRule() {
+-      TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(References.ENTITY);
+-      TaggedChoiceType<String> taggedChoiceType2 = this.getOutputSchema().findChoiceType(References.ENTITY);
++      TaggedChoiceType<String> taggedChoiceType = (TaggedChoiceType<String>) this.getInputSchema().findChoiceType(References.ENTITY); // Pencil - decompile fix
++      TaggedChoiceType<String> taggedChoiceType2 = (TaggedChoiceType<String>) this.getOutputSchema().findChoiceType(References.ENTITY); // Pencil - decompile fix
+       return this.fixTypeEverywhere(
+          this.name,
+          taggedChoiceType,
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityRidingToPassengersFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityRidingToPassengersFix.java
+index 1c46430..49d5741 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityRidingToPassengersFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityRidingToPassengersFix.java
+@@ -61,7 +61,7 @@ public class EntityRidingToPassengersFix extends DataFix {
+                      Pair<String, Pair<Either<OldEntityTree, Unit>, Entity>> pair2 = pair;
+ 
+                      while (true) {
+-                        Either<List<NewEntityTree>, Unit> either = (Either<List<NewEntityTree>, Unit>)DataFixUtils.orElse(
++                        Either<List<NewEntityTree>, Unit> either = DataFixUtils.orElse( // Pencil - decompile fix
+                            optional.map(
+                               pairx -> {
+                                  Typed<NewEntityTree> typed = (Typed<NewEntityTree>)outputEntityTreeType.pointTyped(dynamicOps)
+@@ -74,13 +74,13 @@ public class EntityRidingToPassengersFix extends DataFix {
+                            ),
+                            Either.right(DSL.unit())
+                         );
+-                        optional = Optional.of(Pair.of(References.ENTITY_TREE.typeName(), Pair.of(either, ((Pair)pair2.getSecond()).getSecond())));
++                        optional = Optional.of(Pair.of(References.ENTITY_TREE.typeName(), Pair.of(either, pair2.getSecond().getSecond()))); // Pencil - decompile fix
+                         Optional<OldEntityTree> optional2 = ((Either)((Pair)pair2.getSecond()).getFirst()).left();
+                         if (optional2.isEmpty()) {
+                            return optional.orElseThrow(() -> new IllegalStateException("Should always have an entity tree here"));
+                         }
+ 
+-                        pair2 = (Pair<String, Pair<Either<OldEntityTree, Unit>, Entity>>)new Typed(inputEntityTreeType, dynamicOps, optional2.get())
++                        pair2 = new Typed<>(inputEntityTreeType, dynamicOps, optional2.get()) // Pencil - decompile fix
+                            .getOptional(opticFinder)
+                            .orElseThrow(() -> new IllegalStateException("Should always have an entity here"));
+                      }
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityTheRenameningFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityTheRenameningFix.java
+index fa9d730..5f634ac 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityTheRenameningFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityTheRenameningFix.java
+@@ -5,7 +5,7 @@ import com.mojang.datafixers.schemas.Schema;
+ import java.util.Map;
+ 
+ public class EntityTheRenameningFix extends SimplestEntityRenameFix {
+-   public static final Map<String, String> RENAMED_IDS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_IDS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:commandblock_minecart", "minecraft:command_block_minecart")
+       .put("minecraft:ender_crystal", "minecraft:end_crystal")
+       .put("minecraft:snowman", "minecraft:snow_golem")
+@@ -19,7 +19,7 @@ public class EntityTheRenameningFix extends SimplestEntityRenameFix {
+       .put("minecraft:eye_of_ender_signal", "minecraft:eye_of_ender")
+       .put("minecraft:fireworks_rocket", "minecraft:firework_rocket")
+       .build();
+-   public static final Map<String, String> RENAMED_BLOCKS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_BLOCKS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:portal", "minecraft:nether_portal")
+       .put("minecraft:oak_bark", "minecraft:oak_wood")
+       .put("minecraft:spruce_bark", "minecraft:spruce_wood")
+@@ -35,7 +35,7 @@ public class EntityTheRenameningFix extends SimplestEntityRenameFix {
+       .put("minecraft:stripped_dark_oak_bark", "minecraft:stripped_dark_oak_wood")
+       .put("minecraft:mob_spawner", "minecraft:spawner")
+       .build();
+-   public static final Map<String, String> RENAMED_ITEMS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_ITEMS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .putAll(RENAMED_BLOCKS)
+       .put("minecraft:clownfish", "minecraft:tropical_fish")
+       .put("minecraft:chorus_fruit_popped", "minecraft:popped_chorus_fruit")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityUUIDFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityUUIDFix.java
+index a6dbd00..48219cc 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityUUIDFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityUUIDFix.java
+@@ -101,11 +101,11 @@ public class EntityUUIDFix extends AbstractUUIDFix {
+    private static Dynamic<?> updateFox(Dynamic<?> dynamic) {
+       Optional<Dynamic<?>> optional = dynamic.get("TrustedUUIDs")
+          .result()
+-         .map(dynamic2 -> dynamic.createList(dynamic2.asStream().map(dynamicxx -> (Dynamic)createUUIDFromML(dynamicxx).orElseGet(() -> {
++          .map(dynamic2 -> dynamic.createList(dynamic2.asStream().map(dynamicxx -> createUUIDFromML(dynamicxx).orElseGet(() -> { // Pencil - decompile fix
+                   LOGGER.warn("Trusted contained invalid data.");
+                   return dynamicxx;
+                }))));
+-      return (Dynamic<?>)DataFixUtils.orElse(optional.map(dynamic2 -> dynamic.remove("TrustedUUIDs").set("Trusted", dynamic2)), dynamic);
++      return DataFixUtils.orElse(optional.map(dynamic2 -> dynamic.remove("TrustedUUIDs").set("Trusted", (Dynamic<?>)dynamic2)), dynamic); // Pencil - decompile fix
+    }
+ 
+    private static Dynamic<?> updateHurtBy(Dynamic<?> dynamic) {
+@@ -135,7 +135,7 @@ public class EntityUUIDFix extends AbstractUUIDFix {
+                      dynamicxx -> dynamicxx.update(
+                            "Modifiers",
+                            dynamic2x -> dynamicxx.createList(
+-                                 dynamic2x.asStream().map(dynamicxxxx -> (Dynamic)replaceUUIDLeastMost(dynamicxxxx, "UUID", "UUID").orElse(dynamicxxxx))
++                                 dynamic2x.asStream().map(dynamicxxxx -> replaceUUIDLeastMost(dynamicxxxx, "UUID", "UUID").orElse(dynamicxxxx)) // Pencil - decompile fix
+                               )
+                         )
+                   )
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/EntityZombifiedPiglinRenameFix.java b/src/main/java/net/minecraft/util/datafix/fixes/EntityZombifiedPiglinRenameFix.java
+index 0b725e1..1d0ed5b 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/EntityZombifiedPiglinRenameFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/EntityZombifiedPiglinRenameFix.java
+@@ -6,7 +6,7 @@ import java.util.Map;
+ import java.util.Objects;
+ 
+ public class EntityZombifiedPiglinRenameFix extends SimplestEntityRenameFix {
+-   public static final Map<String, String> RENAMED_IDS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_IDS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:zombie_pigman_spawn_egg", "minecraft:zombified_piglin_spawn_egg")
+       .build();
+ 
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/FixProjectileStoredItem.java b/src/main/java/net/minecraft/util/datafix/fixes/FixProjectileStoredItem.java
+index cefbe7f..cf18cfc 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/FixProjectileStoredItem.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/FixProjectileStoredItem.java
+@@ -43,7 +43,7 @@ public class FixProjectileStoredItem extends DataFix {
+ 
+    private static <T> Function<Typed<?>, Typed<?>> fixChoiceCap(String id, FixProjectileStoredItem.SubFixer<?> fixer, Type<?> inputType, Type<T> outputType) {
+       OpticFinder<?> opticFinder = DSL.namedChoice(id, inputType);
+-      return typed -> typed.updateTyped(opticFinder, outputType, typedx -> fixer.fix(typedx, outputType));
++      return typed -> typed.updateTyped(opticFinder, outputType, typedx -> fixer.fix(typedx, (Type) outputType)); // Pencil - decompile fix
+    }
+ 
+    private static <T> Typed<T> fixArrow(Typed<?> typed, Type<T> type) {
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/GossipUUIDFix.java b/src/main/java/net/minecraft/util/datafix/fixes/GossipUUIDFix.java
+index 6dbea2a..1808b54 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/GossipUUIDFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/GossipUUIDFix.java
+@@ -22,7 +22,7 @@ public class GossipUUIDFix extends NamedEntityFix {
+                         .result()
+                         .map(
+                            gossips -> gossips.map(
+-                                 gossipDynamic -> (Dynamic)AbstractUUIDFix.replaceUUIDLeastMost((Dynamic<?>)gossipDynamic, "Target", "Target")
++                                 gossipDynamic -> AbstractUUIDFix.replaceUUIDLeastMost((Dynamic<?>)gossipDynamic, "Target", "Target") // Pencil - decompile fix
+                                        .orElse((Dynamic<?>)gossipDynamic)
+                               )
+                         )
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ItemSpawnEggFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ItemSpawnEggFix.java
+index ca9769c..9017a6f 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ItemSpawnEggFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ItemSpawnEggFix.java
+@@ -112,7 +112,10 @@ public class ItemSpawnEggFix extends DataFix {
+                Typed<?> typed2 = itemStack.getOrCreateTyped(opticFinder3);
+                Typed<?> typed3 = typed2.getOrCreateTyped(opticFinder4);
+                Typed<?> typed4 = typed3.getOrCreateTyped(opticFinder5);
+-               Typed<?> typed5 = Util.writeAndReadTypedOrThrow(typed4, type2, dynamic2 -> dynamic2.set("id", dynamic.createString(string)));
++               // Pencil start - decompile fix
++               Dynamic<?> f_Dynamic = dynamic;
++               Typed<?> typed5 = Util.writeAndReadTypedOrThrow(typed4, type2, dynamic2 -> dynamic2.set("id", f_Dynamic.createString(string)));
++               // Pencil end
+                typed = itemStack.set(opticFinder3, typed2.set(opticFinder4, typed3.set(opticFinder5, typed5)));
+             }
+ 
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ItemStackComponentizationFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ItemStackComponentizationFix.java
+index 36a73e6..5d406a9 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ItemStackComponentizationFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ItemStackComponentizationFix.java
+@@ -375,7 +375,7 @@ public class ItemStackComponentizationFix extends DataFix {
+                   optional.get()
+                      .asStream()
+                      .map(
+-                        predicatesDynamic -> (Dynamic)DataFixUtils.orElse(
++                        predicatesDynamic -> DataFixUtils.orElse( // Pencil - decompile fix
+                               predicatesDynamic.asString().map(string -> fixBlockStatePredicate((Dynamic<?>)predicatesDynamic, string)).result(),
+                               predicatesDynamic
+                            )
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ItemStackSpawnEggFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ItemStackSpawnEggFix.java
+index 13382ba..8244320 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ItemStackSpawnEggFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ItemStackSpawnEggFix.java
+@@ -17,7 +17,7 @@ import net.minecraft.util.datafix.schemas.NamespacedSchema;
+ 
+ public class ItemStackSpawnEggFix extends DataFix {
+    private final String itemType;
+-   private static final Map<String, String> MAP = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   private static final Map<String, String> MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       map.put("minecraft:bat", "minecraft:bat_spawn_egg");
+       map.put("minecraft:blaze", "minecraft:blaze_spawn_egg");
+       map.put("minecraft:cave_spider", "minecraft:cave_spider_spawn_egg");
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ItemStackTheFlatteningFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ItemStackTheFlatteningFix.java
+index 5da91d7..6dc7c2e 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ItemStackTheFlatteningFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ItemStackTheFlatteningFix.java
+@@ -20,7 +20,7 @@ import javax.annotation.Nullable;
+ import net.minecraft.util.datafix.schemas.NamespacedSchema;
+ 
+ public class ItemStackTheFlatteningFix extends DataFix {
+-   private static final Map<String, String> MAP = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   private static final Map<String, String> MAP = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       map.put("minecraft:stone.0", "minecraft:stone");
+       map.put("minecraft:stone.1", "minecraft:granite");
+       map.put("minecraft:stone.2", "minecraft:polished_granite");
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ItemStackUUIDFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ItemStackUUIDFix.java
+index cbbbba8..892d78d 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ItemStackUUIDFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ItemStackUUIDFix.java
+@@ -33,7 +33,7 @@ public class ItemStackUUIDFix extends AbstractUUIDFix {
+          "AttributeModifiers",
+          attributeModifiersDynamic -> tagDynamic.createList(
+                attributeModifiersDynamic.asStream()
+-                  .map(attributeModifier -> (Dynamic)replaceUUIDLeastMost((Dynamic<?>)attributeModifier, "UUID", "UUID").orElse((Dynamic<?>)attributeModifier))
++                   .map(attributeModifier -> replaceUUIDLeastMost((Dynamic<?>)attributeModifier, "UUID", "UUID").orElse((Dynamic<?>)attributeModifier)) // Pencil - decompile fix
+             )
+       );
+    }
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/JigsawRotationFix.java b/src/main/java/net/minecraft/util/datafix/fixes/JigsawRotationFix.java
+index d13214a..98af11e 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/JigsawRotationFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/JigsawRotationFix.java
+@@ -10,7 +10,7 @@ import java.util.Map;
+ import java.util.Optional;
+ 
+ public class JigsawRotationFix extends DataFix {
+-   private static final Map<String, String> RENAMES = ImmutableMap.builder()
++   private static final Map<String, String> RENAMES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("down", "down_south")
+       .put("up", "up_north")
+       .put("north", "north_up")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/LeavesFix.java b/src/main/java/net/minecraft/util/datafix/fixes/LeavesFix.java
+index 2dfeb34..2016381 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/LeavesFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/LeavesFix.java
+@@ -361,7 +361,7 @@ public class LeavesFix extends DataFix {
+             : typed.update(DSL.remainderFinder(), remainder -> remainder.set("BlockStates", remainder.createLongList(Arrays.stream(this.storage.getRaw()))))
+                .set(
+                   this.paletteFinder,
+-                  this.palette.stream().map(propertiesDynamic -> Pair.of(References.BLOCK_STATE.typeName(), propertiesDynamic)).collect(Collectors.toList())
++                   this.palette.stream().<Pair<String, Dynamic<?>>>map(dynamic -> Pair.of(References.BLOCK_STATE.typeName(), dynamic)).collect(Collectors.toList()) // Pencil - decompile fix
+                );
+       }
+ 
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/LevelUUIDFix.java b/src/main/java/net/minecraft/util/datafix/fixes/LevelUUIDFix.java
+index 18b0a33..28721cc 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/LevelUUIDFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/LevelUUIDFix.java
+@@ -51,9 +51,9 @@ public class LevelUUIDFix extends AbstractUUIDFix {
+                      bossbarDynamic -> bossbarDynamic.update(
+                            "Players",
+                            playersDynamic -> bossbarDynamic.createList(
+-                                 playersDynamic.asStream().map(playerDynamic -> (Dynamic)createUUIDFromML((Dynamic<?>)playerDynamic).orElseGet(() -> {
++                           playersDynamic.asStream().map(playerDynamic -> createUUIDFromML((Dynamic<?>)playerDynamic).orElseGet(() -> { // Pencil - decompile fix
+                                        LOGGER.warn("CustomBossEvents contains invalid UUIDs.");
+-                                       return (Dynamic<?>)playerDynamic;
++                               return playerDynamic; // Pencil - decompile fix
+                                     }))
+                               )
+                         )
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/MobSpawnerEntityIdentifiersFix.java b/src/main/java/net/minecraft/util/datafix/fixes/MobSpawnerEntityIdentifiersFix.java
+index 96d3235..54dc6ee 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/MobSpawnerEntityIdentifiersFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/MobSpawnerEntityIdentifiersFix.java
+@@ -40,13 +40,13 @@ public class MobSpawnerEntityIdentifiersFix extends DataFix {
+                         spawnPotentialsDynamic -> {
+                            Optional<String> optionalx = spawnPotentialsDynamic.get("Type").asString().result();
+                            if (optionalx.isPresent()) {
+-                              Dynamic<?> dynamic = ((Dynamic)DataFixUtils.orElse(
++                                  Dynamic<?> dynamic = DataFixUtils.orElse( // Pencil - decompile fix
+                                     spawnPotentialsDynamic.get("Properties").result(), spawnPotentialsDynamic.emptyMap()
+-                                 ))
++                                      ) // Pencil - decompile fix
+                                  .set("id", spawnPotentialsDynamic.createString(optionalx.get()));
+                               return spawnPotentialsDynamic.set("Entity", dynamic).remove("Type").remove("Properties");
+                            } else {
+-                              return (Dynamic)spawnPotentialsDynamic;
++                                  return spawnPotentialsDynamic; // Pencil - decompile fix
+                            }
+                         }
+                      )
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/NamedEntityWriteReadFix.java b/src/main/java/net/minecraft/util/datafix/fixes/NamedEntityWriteReadFix.java
+index cbfb81a..e1b9902 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/NamedEntityWriteReadFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/NamedEntityWriteReadFix.java
+@@ -39,10 +39,12 @@ public abstract class NamedEntityWriteReadFix extends DataFix {
+ 
+    private <S, T, A, B> TypeRewriteRule fix(Type<S> inputType, Type<T> outputType, OpticFinder<A> opticFinder, Type<B> outputSubtype, Type<?> rewrittenType) {
+       return this.fixTypeEverywhere(this.name, inputType, outputType, dynamicOps -> input -> {
+-            Typed<S> typed = new Typed(inputType, dynamicOps, input);
+-            return typed.update(opticFinder, outputSubtype, object -> {
+-               Typed<A> typedx = new Typed(rewrittenType, dynamicOps, object);
+-               return Util.writeAndReadTypedOrThrow(typedx, outputSubtype, this::fix).getValue();
++         // Pencil start - decompile fix
++         Typed<S> typed = new Typed<>(inputType, dynamicOps, input);
++         return (T)typed.update(opticFinder, outputSubtype, object -> {
++            Typed<A> typedx = new Typed<>((Type<A>)rewrittenType, dynamicOps, object);
++            return Util.<A, B>writeAndReadTypedOrThrow(typedx, outputSubtype, this::fix).getValue();
++         // Pencil end
+             }).getValue();
+          });
+    }
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/OptionsKeyLwjgl3Fix.java b/src/main/java/net/minecraft/util/datafix/fixes/OptionsKeyLwjgl3Fix.java
+index 5d440b5..6f5ee35 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/OptionsKeyLwjgl3Fix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/OptionsKeyLwjgl3Fix.java
+@@ -139,8 +139,8 @@ public class OptionsKeyLwjgl3Fix extends DataFix {
+          optionsTyped -> optionsTyped.update(
+                DSL.remainderFinder(),
+                optionsDynamic -> optionsDynamic.getMapValues().map(optionsMap -> optionsDynamic.createMap(optionsMap.entrySet().stream().map(entry -> {
+-                        if (((Dynamic)entry.getKey()).asString("").startsWith("key_")) {
+-                           int i = Integer.parseInt(((Dynamic)entry.getValue()).asString(""));
++                if (entry.getKey().asString("").startsWith("key_")) { // Pencil - decompile error
++                   int i = Integer.parseInt(entry.getValue().asString("")); // Pencil - decompile error
+                            if (i < 0) {
+                               int j = i + 100;
+                               String string;
+@@ -154,15 +154,15 @@ public class OptionsKeyLwjgl3Fix extends DataFix {
+                                  string = "key.mouse." + (j + 1);
+                               }
+ 
+-                              return Pair.of((Dynamic)entry.getKey(), ((Dynamic)entry.getValue()).createString(string));
++                      return Pair.of(entry.getKey(), entry.getValue().createString(string)); // Pencil - decompile error
+                            } else {
+-                              String string5 = (String)MAP.getOrDefault(i, "key.unknown");
+-                              return Pair.of((Dynamic)entry.getKey(), ((Dynamic)entry.getValue()).createString(string5));
++                      String string5 = MAP.getOrDefault(i, "key.unknown"); // Pencil - decompile error
++                      return Pair.of(entry.getKey(), entry.getValue().createString(string5)); // Pencil - decompile error
+                            }
+                         } else {
+-                           return Pair.of((Dynamic)entry.getKey(), (Dynamic)entry.getValue());
++                   return Pair.of(entry.getKey(), entry.getValue()); // Pencil - decompile error
+                         }
+-                     }).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)))).result().orElse(optionsDynamic)
++             }).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)))).result().orElse((Dynamic)optionsDynamic) // Pencil - decompile error
+             )
+       );
+    }
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/OptionsKeyTranslationFix.java b/src/main/java/net/minecraft/util/datafix/fixes/OptionsKeyTranslationFix.java
+index 953da2b..4feb673 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/OptionsKeyTranslationFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/OptionsKeyTranslationFix.java
+@@ -20,16 +20,18 @@ public class OptionsKeyTranslationFix extends DataFix {
+          optionsTyped -> optionsTyped.update(
+                DSL.remainderFinder(),
+                optionsDynamic -> optionsDynamic.getMapValues().map(optionsMap -> optionsDynamic.createMap(optionsMap.entrySet().stream().map(entry -> {
+-                        if (((Dynamic)entry.getKey()).asString("").startsWith("key_")) {
+-                           String string = ((Dynamic)entry.getValue()).asString("");
++                   // Pencil start - decompile fix
++                   if (entry.getKey().asString("").startsWith("key_")) {
++                        String string = entry.getValue().asString("");
+                            if (!string.startsWith("key.mouse") && !string.startsWith("scancode.")) {
+-                              return Pair.of((Dynamic)entry.getKey(), optionsDynamic.createString("key.keyboard." + string.substring("key.".length())));
++                            return Pair.of(entry.getKey(), optionsDynamic.createString("key.keyboard." + string.substring("key.".length())));
++                   // Pencil end
+                            }
+                         }
+-
+-                        return Pair.of((Dynamic)entry.getKey(), (Dynamic)entry.getValue());
+-                     }).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)))).result().orElse(optionsDynamic)
+-            )
++               // Pencil start - decompile fix
++                    return Pair.of(entry.getKey(), entry.getValue());
++                }).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)))).result().orElse((Dynamic) optionsDynamic))
++               // Pencil end
+       );
+    }
+ }
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ParticleUnflatteningFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ParticleUnflatteningFix.java
+index 39fa7b2..fdd1145 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ParticleUnflatteningFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ParticleUnflatteningFix.java
+@@ -192,7 +192,7 @@ public class ParticleUnflatteningFix extends DataFix {
+          float h = (float)stringReader.readDouble();
+          stringReader.expect(' ');
+          int i = stringReader.readInt();
+-         Dynamic<T> dynamic2 = dynamic.createIntList(IntStream.of(Mth.floor(f), Mth.floor(g), Mth.floor(h)));
++         Dynamic<T> dynamic2 = (Dynamic<T>)dynamic.createIntList(IntStream.of(Mth.floor(f), Mth.floor(g), Mth.floor(h))); // Pencil - decompile fix
+          Dynamic<T> dynamic3 = dynamic.createMap(
+             Map.of(dynamic.createString("type"), dynamic.createString("minecraft:block"), dynamic.createString("pos"), dynamic2)
+          );
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/RecipesFix.java b/src/main/java/net/minecraft/util/datafix/fixes/RecipesFix.java
+index cd20543..7de9bb4 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/RecipesFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/RecipesFix.java
+@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
+ import java.util.Map;
+ 
+ public class RecipesFix {
+-   public static final Map<String, String> RECIPES = ImmutableMap.builder()
++   public static final Map<String, String> RECIPES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:acacia_wooden_slab", "minecraft:acacia_slab")
+       .put("minecraft:birch_wooden_slab", "minecraft:birch_slab")
+       .put("minecraft:black_stained_hardened_clay", "minecraft:black_terracotta")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/RecipesRenameningFix.java b/src/main/java/net/minecraft/util/datafix/fixes/RecipesRenameningFix.java
+index 3286b7b..21bf6ed 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/RecipesRenameningFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/RecipesRenameningFix.java
+@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
+ import java.util.Map;
+ 
+ public class RecipesRenameningFix {
+-   public static final Map<String, String> RECIPES = ImmutableMap.builder()
++   public static final Map<String, String> RECIPES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:acacia_bark", "minecraft:acacia_wood")
+       .put("minecraft:birch_bark", "minecraft:birch_wood")
+       .put("minecraft:dark_oak_bark", "minecraft:dark_oak_wood")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/RenamedCoralFansFix.java b/src/main/java/net/minecraft/util/datafix/fixes/RenamedCoralFansFix.java
+index db8135c..4eeb3ff 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/RenamedCoralFansFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/RenamedCoralFansFix.java
+@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
+ import java.util.Map;
+ 
+ public class RenamedCoralFansFix {
+-   public static final Map<String, String> RENAMED_IDS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_IDS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:tube_coral_fan", "minecraft:tube_coral_wall_fan")
+       .put("minecraft:brain_coral_fan", "minecraft:brain_coral_wall_fan")
+       .put("minecraft:bubble_coral_fan", "minecraft:bubble_coral_wall_fan")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/RenamedCoralFix.java b/src/main/java/net/minecraft/util/datafix/fixes/RenamedCoralFix.java
+index 324c9df..7856a6a 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/RenamedCoralFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/RenamedCoralFix.java
+@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
+ import java.util.Map;
+ 
+ public class RenamedCoralFix {
+-   public static final Map<String, String> RENAMED_IDS = ImmutableMap.builder()
++   public static final Map<String, String> RENAMED_IDS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:blue_coral", "minecraft:tube_coral_block")
+       .put("minecraft:pink_coral", "minecraft:brain_coral_block")
+       .put("minecraft:purple_coral", "minecraft:bubble_coral_block")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/SavedDataUUIDFix.java b/src/main/java/net/minecraft/util/datafix/fixes/SavedDataUUIDFix.java
+index 11cfcac..2d740c7 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/SavedDataUUIDFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/SavedDataUUIDFix.java
+@@ -32,7 +32,7 @@ public class SavedDataUUIDFix extends AbstractUUIDFix {
+                                              heroesOfTheVillageDynamic -> heroesOfTheVillageDynamic.createList(
+                                                    heroesOfTheVillageDynamic.asStream()
+                                                       .map(
+-                                                         heroOfTheVillageDynamic -> (Dynamic)createUUIDFromLongs(
++                                                         heroOfTheVillageDynamic -> createUUIDFromLongs( // Pencil - decompile fix
+                                                                   (Dynamic<?>)heroOfTheVillageDynamic, "UUIDMost", "UUIDLeast"
+                                                                )
+                                                                .orElseGet(() -> {
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/ScoreboardDisplaySlotFix.java b/src/main/java/net/minecraft/util/datafix/fixes/ScoreboardDisplaySlotFix.java
+index 3263a05..f9a2232 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/ScoreboardDisplaySlotFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/ScoreboardDisplaySlotFix.java
+@@ -13,7 +13,7 @@ import java.util.Map;
+ import javax.annotation.Nullable;
+ 
+ public class ScoreboardDisplaySlotFix extends DataFix {
+-   private static final Map<String, String> SLOT_RENAMES = ImmutableMap.builder()
++   private static final Map<String, String> SLOT_RENAMES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("slot_0", "list")
+       .put("slot_1", "sidebar")
+       .put("slot_2", "below_name")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/SimplestEntityRenameFix.java b/src/main/java/net/minecraft/util/datafix/fixes/SimplestEntityRenameFix.java
+index 9840308..2a880d7 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/SimplestEntityRenameFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/SimplestEntityRenameFix.java
+@@ -20,8 +20,8 @@ public abstract class SimplestEntityRenameFix extends DataFix {
+    }
+ 
+    public TypeRewriteRule makeRule() {
+-      TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(References.ENTITY);
+-      TaggedChoiceType<String> taggedChoiceType2 = this.getOutputSchema().findChoiceType(References.ENTITY);
++      TaggedChoiceType<String> taggedChoiceType = (TaggedChoiceType<String>) this.getInputSchema().findChoiceType(References.ENTITY); // Pencil - decompile fix
++      TaggedChoiceType<String> taggedChoiceType2 = (TaggedChoiceType<String>) this.getOutputSchema().findChoiceType(References.ENTITY); // Pencil - decompile fix
+       Type<Pair<String, String>> type = DSL.named(References.ENTITY_NAME.typeName(), NamespacedSchema.namespacedString());
+       if (!Objects.equals(this.getOutputSchema().getType(References.ENTITY_NAME), type)) {
+          throw new IllegalStateException("Entity name type is not what was expected.");
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/SpawnerDataFix.java b/src/main/java/net/minecraft/util/datafix/fixes/SpawnerDataFix.java
+index b04fa4a..fdc19f0 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/SpawnerDataFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/SpawnerDataFix.java
+@@ -42,7 +42,7 @@ public class SpawnerDataFix extends DataFix {
+       List<?> list = (List<?>)spawnPotentialsTyped.getValue();
+       List<?> list2 = list.stream().map(object -> {
+          Pair<Object, Dynamic<?>> pair = (Pair<Object, Dynamic<?>>)object;
+-         int i = ((Dynamic)pair.getSecond()).get("Weight").asNumber().result().orElse(1).intValue();
++         int i = (pair.getSecond()).get("Weight").asNumber().result().orElse(1).intValue(); // Pencil - decompile fix
+          Dynamic<?> dynamic = new Dynamic(dynamicOps);
+          dynamic = dynamic.set("weight", dynamic.createInt(i));
+          Dynamic<?> dynamic2 = ((Dynamic)pair.getSecond()).remove("Weight").remove("Entity");
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/StatsCounterFix.java b/src/main/java/net/minecraft/util/datafix/fixes/StatsCounterFix.java
+index 9c9cb27..44e377a 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/StatsCounterFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/StatsCounterFix.java
+@@ -65,14 +65,14 @@ public class StatsCounterFix extends DataFix {
+       "teamkill.white",
+       "teamkill.yellow"
+    );
+-   private static final Set<String> SKIP = ImmutableSet.builder()
++   private static final Set<String> SKIP = ImmutableSet.<String>builder() // Pencil - decompile fix
+       .add("stat.craftItem.minecraft.spawn_egg")
+       .add("stat.useItem.minecraft.spawn_egg")
+       .add("stat.breakItem.minecraft.spawn_egg")
+       .add("stat.pickup.minecraft.spawn_egg")
+       .add("stat.drop.minecraft.spawn_egg")
+       .build();
+-   private static final Map<String, String> CUSTOM_MAP = ImmutableMap.builder()
++   private static final Map<String, String> CUSTOM_MAP = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("stat.leaveGame", "minecraft:leave_game")
+       .put("stat.playOneMinute", "minecraft:play_one_minute")
+       .put("stat.timeSinceDeath", "minecraft:time_since_death")
+@@ -126,18 +126,18 @@ public class StatsCounterFix extends DataFix {
+       .build();
+    private static final String BLOCK_KEY = "stat.mineBlock";
+    private static final String NEW_BLOCK_KEY = "minecraft:mined";
+-   private static final Map<String, String> ITEM_KEYS = ImmutableMap.builder()
++   private static final Map<String, String> ITEM_KEYS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("stat.craftItem", "minecraft:crafted")
+       .put("stat.useItem", "minecraft:used")
+       .put("stat.breakItem", "minecraft:broken")
+       .put("stat.pickup", "minecraft:picked_up")
+       .put("stat.drop", "minecraft:dropped")
+       .build();
+-   private static final Map<String, String> ENTITY_KEYS = ImmutableMap.builder()
++   private static final Map<String, String> ENTITY_KEYS = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("stat.entityKilledBy", "minecraft:killed_by")
+       .put("stat.killEntity", "minecraft:killed")
+       .build();
+-   private static final Map<String, String> ENTITIES = ImmutableMap.builder()
++   private static final Map<String, String> ENTITIES = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("Bat", "minecraft:bat")
+       .put("Blaze", "minecraft:blaze")
+       .put("CaveSpider", "minecraft:cave_spider")
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/StructuresBecomeConfiguredFix.java b/src/main/java/net/minecraft/util/datafix/fixes/StructuresBecomeConfiguredFix.java
+index 43f6954..8d1fcea 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/StructuresBecomeConfiguredFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/StructuresBecomeConfiguredFix.java
+@@ -24,7 +24,7 @@ import org.slf4j.Logger;
+ 
+ public class StructuresBecomeConfiguredFix extends DataFix {
+    private static final Logger LOGGER = LogUtils.getLogger();
+-   private static final Map<String, StructuresBecomeConfiguredFix.Conversion> CONVERSION_MAP = ImmutableMap.builder()
++   private static final Map<String, StructuresBecomeConfiguredFix.Conversion> CONVERSION_MAP = ImmutableMap.<String, StructuresBecomeConfiguredFix.Conversion>builder() // Pencil - decompile fix
+       .put(
+          "mineshaft",
+          StructuresBecomeConfiguredFix.Conversion.biomeMapped(
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/TrappedChestBlockEntityFix.java b/src/main/java/net/minecraft/util/datafix/fixes/TrappedChestBlockEntityFix.java
+index 633df03..5936ce8 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/TrappedChestBlockEntityFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/TrappedChestBlockEntityFix.java
+@@ -76,7 +76,7 @@ public class TrappedChestBlockEntityFix extends DataFix {
+                               Dynamic<?> dynamic = (Dynamic<?>)typedx.get(DSL.remainderFinder());
+                               int k = dynamic.get("xPos").asInt(0);
+                               int l = dynamic.get("zPos").asInt(0);
+-                              TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(References.BLOCK_ENTITY);
++                              TaggedChoiceType<String> taggedChoiceType = (TaggedChoiceType<String>)this.getInputSchema().findChoiceType(References.BLOCK_ENTITY); // Pencil - decompile fix
+                               return typedx.updateTyped(
+                                  opticFinder,
+                                  typedxx -> typedxx.updateTyped(
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/VillagerDataFix.java b/src/main/java/net/minecraft/util/datafix/fixes/VillagerDataFix.java
+index 98b7100..82e6274 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/VillagerDataFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/VillagerDataFix.java
+@@ -29,7 +29,7 @@ public class VillagerDataFix extends NamedEntityFix {
+                      dynamic.createString("profession"),
+                      dynamic.createString(upgradeData(dynamic.get("Profession").asInt(0), dynamic.get("Career").asInt(0))),
+                      dynamic.createString("level"),
+-                     (Dynamic)DataFixUtils.orElse(dynamic.get("CareerLevel").result(), dynamic.createInt(1))
++                     DataFixUtils.orElse(dynamic.get("CareerLevel").result(), dynamic.createInt(1)) // Pencil - decompile fix
+                   )
+                )
+             )
+diff --git a/src/main/java/net/minecraft/util/datafix/fixes/WorldGenSettingsFix.java b/src/main/java/net/minecraft/util/datafix/fixes/WorldGenSettingsFix.java
+index d84ef3b..5666868 100644
+--- a/src/main/java/net/minecraft/util/datafix/fixes/WorldGenSettingsFix.java
++++ b/src/main/java/net/minecraft/util/datafix/fixes/WorldGenSettingsFix.java
+@@ -33,7 +33,7 @@ public class WorldGenSettingsFix extends DataFix {
+    private static final String END_CITY = "minecraft:endcity";
+    private static final String WOODLAND_MANSION = "minecraft:mansion";
+    private static final String OCEAN_MONUMENT = "minecraft:monument";
+-   private static final ImmutableMap<String, WorldGenSettingsFix.StructureFeatureConfiguration> DEFAULTS = ImmutableMap.builder()
++   private static final ImmutableMap<String, WorldGenSettingsFix.StructureFeatureConfiguration> DEFAULTS = ImmutableMap.<String, WorldGenSettingsFix.StructureFeatureConfiguration>builder() // Pencil - decompile fix
+       .put("minecraft:village", new WorldGenSettingsFix.StructureFeatureConfiguration(32, 8, 10387312))
+       .put("minecraft:desert_pyramid", new WorldGenSettingsFix.StructureFeatureConfiguration(32, 8, 14357617))
+       .put("minecraft:igloo", new WorldGenSettingsFix.StructureFeatureConfiguration(32, 8, 14357618))
+@@ -73,7 +73,7 @@ public class WorldGenSettingsFix extends DataFix {
+    }
+ 
+    private static <T> Dynamic<T> vanillaBiomeSource(Dynamic<T> worldGenSettingsDynamic, long seed, boolean legacyBiomeInitLayer, boolean largeBiomes) {
+-      Builder<Dynamic<T>, Dynamic<T>> builder = ImmutableMap.builder()
++      Builder<Dynamic<T>, Dynamic<T>> builder = ImmutableMap.<Dynamic<T>, Dynamic<T>>builder() // Pencil - decompile fix
+          .put(worldGenSettingsDynamic.createString("type"), worldGenSettingsDynamic.createString("minecraft:vanilla_layered"))
+          .put(worldGenSettingsDynamic.createString("seed"), worldGenSettingsDynamic.createLong(seed))
+          .put(worldGenSettingsDynamic.createString("large_biomes"), worldGenSettingsDynamic.createBoolean(largeBiomes));
+diff --git a/src/main/java/net/minecraft/util/datafix/schemas/V704.java b/src/main/java/net/minecraft/util/datafix/schemas/V704.java
+index 9e331d1..55870bc 100644
+--- a/src/main/java/net/minecraft/util/datafix/schemas/V704.java
++++ b/src/main/java/net/minecraft/util/datafix/schemas/V704.java
+@@ -141,7 +141,7 @@ public class V704 extends Schema {
+    });
+    protected static final HookFunction ADD_NAMES = new HookFunction() {
+       public <T> T apply(DynamicOps<T> dynamicOps, T object) {
+-         return V99.addNames(new Dynamic(dynamicOps, object), V704.ITEM_TO_BLOCKENTITY, V99.ITEM_TO_ENTITY);
++         return V99.addNames(new Dynamic<>(dynamicOps, object), V704.ITEM_TO_BLOCKENTITY, V99.ITEM_TO_ENTITY); // Pencil - decompile fix
+       }
+    };
+ 
+diff --git a/src/main/java/net/minecraft/util/datafix/schemas/V705.java b/src/main/java/net/minecraft/util/datafix/schemas/V705.java
+index 617d3a8..e0cf66f 100644
+--- a/src/main/java/net/minecraft/util/datafix/schemas/V705.java
++++ b/src/main/java/net/minecraft/util/datafix/schemas/V705.java
+@@ -14,7 +14,7 @@ import java.util.function.Supplier;
+ import net.minecraft.util.datafix.fixes.References;
+ 
+ public class V705 extends NamespacedSchema {
+-   static final Map<String, String> ITEM_TO_ENTITY = ImmutableMap.builder()
++   static final Map<String, String> ITEM_TO_ENTITY = ImmutableMap.<String, String>builder() // Pencil - decompile fix
+       .put("minecraft:armor_stand", "minecraft:armor_stand")
+       .put("minecraft:painting", "minecraft:painting")
+       .put("minecraft:armadillo_spawn_egg", "minecraft:armadillo")
+@@ -125,7 +125,7 @@ public class V705 extends NamespacedSchema {
+       .build();
+    protected static final HookFunction ADD_NAMES = new HookFunction() {
+       public <T> T apply(DynamicOps<T> dynamicOps, T object) {
+-         return V99.addNames(new Dynamic(dynamicOps, object), V704.ITEM_TO_BLOCKENTITY, V705.ITEM_TO_ENTITY);
++         return V99.addNames(new Dynamic<>(dynamicOps, object), V704.ITEM_TO_BLOCKENTITY, V705.ITEM_TO_ENTITY); // Pencil - decompile fix
+       }
+    };
+ 
+diff --git a/src/main/java/net/minecraft/util/datafix/schemas/V99.java b/src/main/java/net/minecraft/util/datafix/schemas/V99.java
+index b5f5f43..822e6f1 100644
+--- a/src/main/java/net/minecraft/util/datafix/schemas/V99.java
++++ b/src/main/java/net/minecraft/util/datafix/schemas/V99.java
+@@ -17,7 +17,7 @@ import org.slf4j.Logger;
+ 
+ public class V99 extends Schema {
+    private static final Logger LOGGER = LogUtils.getLogger();
+-   static final Map<String, String> ITEM_TO_BLOCKENTITY = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), map -> {
++   static final Map<String, String> ITEM_TO_BLOCKENTITY = DataFixUtils.make(Maps.newHashMap(), map -> { // Pencil - decompile fix
+       map.put("minecraft:furnace", "Furnace");
+       map.put("minecraft:lit_furnace", "Furnace");
+       map.put("minecraft:chest", "Chest");
+@@ -56,7 +56,7 @@ public class V99 extends Schema {
+    public static final Map<String, String> ITEM_TO_ENTITY = Map.of("minecraft:armor_stand", "ArmorStand", "minecraft:painting", "Painting");
+    protected static final HookFunction ADD_NAMES = new HookFunction() {
+       public <T> T apply(DynamicOps<T> dynamicOps, T object) {
+-         return V99.addNames(new Dynamic(dynamicOps, object), V99.ITEM_TO_BLOCKENTITY, V99.ITEM_TO_ENTITY);
++         return V99.addNames(new Dynamic<>(dynamicOps, object), V99.ITEM_TO_BLOCKENTITY, V99.ITEM_TO_ENTITY); // Pencil - decompile fix
+       }
+    };
+ 
 diff --git a/src/main/java/net/minecraft/util/valueproviders/BiasedToBottomInt.java b/src/main/java/net/minecraft/util/valueproviders/BiasedToBottomInt.java
 index cd0dfb9..ee5bc40 100644
 --- a/src/main/java/net/minecraft/util/valueproviders/BiasedToBottomInt.java
@@ -1642,6 +3321,19 @@ index 5224ec1..ab1c72c 100644
              instance -> instance.group(
                       BuiltInRegistries.ENTITY_TYPE.byNameCodec().fieldOf("type").forGetter(spawnEntry -> spawnEntry.type),
                       Weight.CODEC.fieldOf("weight").forGetter(WeightedEntry.IntrusiveBase::getWeight),
+diff --git a/src/main/java/net/minecraft/world/level/biome/MultiNoiseBiomeSourceParameterList.java b/src/main/java/net/minecraft/world/level/biome/MultiNoiseBiomeSourceParameterList.java
+index 330f6f8..bcec4c0 100644
+--- a/src/main/java/net/minecraft/world/level/biome/MultiNoiseBiomeSourceParameterList.java
++++ b/src/main/java/net/minecraft/world/level/biome/MultiNoiseBiomeSourceParameterList.java
+@@ -83,7 +83,7 @@ public class MultiNoiseBiomeSourceParameterList {
+       public static final Codec<MultiNoiseBiomeSourceParameterList.Preset> CODEC = ResourceLocation.CODEC
+          .flatXmap(
+             resourceLocation -> Optional.ofNullable(BY_NAME.get(resourceLocation))
+-                  .<DataResult>map(DataResult::success)
++                  .map(DataResult::success) // Pencil - decompile fix
+                   .orElseGet(() -> DataResult.error(() -> "Unknown preset: " + resourceLocation)),
+             preset -> DataResult.success(preset.id)
+          );
 diff --git a/src/main/java/net/minecraft/world/level/block/SculkSpreader.java b/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
 index 0322b11..b37f963 100644
 --- a/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
@@ -2026,6 +3718,32 @@ index c808b58..45a55a3 100644
           instance -> instance.group(
                    Codec.INT.fieldOf("min_section").forGetter(blendingData -> blendingData.areaWithOldGeneration.getMinSection()),
                    Codec.INT.fieldOf("max_section").forGetter(blendingData -> blendingData.areaWithOldGeneration.getMaxSection()),
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/flat/FlatLevelGeneratorSettings.java b/src/main/java/net/minecraft/world/level/levelgen/flat/FlatLevelGeneratorSettings.java
+index 6a7ed2d..316872d 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/flat/FlatLevelGeneratorSettings.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/flat/FlatLevelGeneratorSettings.java
+@@ -33,7 +33,7 @@ import org.slf4j.Logger;
+ 
+ public class FlatLevelGeneratorSettings {
+    private static final Logger LOGGER = LogUtils.getLogger();
+-   public static final Codec<FlatLevelGeneratorSettings> CODEC = RecordCodecBuilder.create(
++   public static final Codec<FlatLevelGeneratorSettings> CODEC = RecordCodecBuilder.<FlatLevelGeneratorSettings>create( // Pencil - decompile fix
+          instance -> instance.group(
+                   RegistryCodecs.homogeneousList(Registries.STRUCTURE_SET)
+                      .lenientOptionalFieldOf("structure_overrides")
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/presets/WorldPreset.java b/src/main/java/net/minecraft/world/level/levelgen/presets/WorldPreset.java
+index e79e000..3101c19 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/presets/WorldPreset.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/presets/WorldPreset.java
+@@ -16,7 +16,7 @@ import net.minecraft.world.level.dimension.LevelStem;
+ import net.minecraft.world.level.levelgen.WorldDimensions;
+ 
+ public class WorldPreset {
+-   public static final Codec<WorldPreset> DIRECT_CODEC = RecordCodecBuilder.create(
++   public static final Codec<WorldPreset> DIRECT_CODEC = RecordCodecBuilder.<WorldPreset>create( // Pencil - decompile fix
+          instance -> instance.group(
+                   Codec.unboundedMap(ResourceKey.codec(Registries.LEVEL_STEM), LevelStem.CODEC).fieldOf("dimensions").forGetter(preset -> preset.dimensions)
+                )
 diff --git a/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java b/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java
 index 9c73d92..f6344ca 100644
 --- a/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java
