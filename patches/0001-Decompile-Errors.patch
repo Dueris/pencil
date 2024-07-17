@@ -1,9 +1,13 @@
-From 9fa35173906dc59796f674aee5f04f9218016845 Mon Sep 17 00:00:00 2001
+From 937c3dca394d9bcc3e1bd46290204f3eeb5c982e Mon Sep 17 00:00:00 2001
 From: dueris <jedimastertoothless@hotmail.com>
-Date: Tue, 16 Jul 2024 19:42:10 -0700
+Date: Wed, 17 Jul 2024 07:13:19 -0700
 Subject: [PATCH] Decompile Errors
 
 ---
+ .../minecraft/advancements/Advancement.java   |   4 +-
+ .../net/minecraft/advancements/Criterion.java |   2 +-
+ .../java/net/minecraft/commands/Commands.java |   2 +-
+ .../arguments/ArgumentSignatures.java         |   8 +-
  .../java/net/minecraft/core/BlockPos.java     |   6 +-
  .../java/net/minecraft/core/HolderLookup.java |   2 +-
  .../java/net/minecraft/core/Registry.java     |  16 +--
@@ -13,6 +17,9 @@ Subject: [PATCH] Decompile Errors
  src/main/java/net/minecraft/nbt/NbtOps.java   | 111 ++++++++++++++----
  .../network/chat/LastSeenMessages.java        |   2 +-
  .../minecraft/network/codec/StreamCodec.java  |   2 +-
+ .../ClientboundCustomPayloadPacket.java       |   4 +-
+ .../ServerboundCustomPayloadPacket.java       |  14 +--
+ .../common/custom/CustomPacketPayload.java    |   2 +-
  .../network/syncher/EntityDataSerializer.java |   2 +-
  .../net/minecraft/resources/RegistryOps.java  |   2 +-
  .../net/minecraft/server/MinecraftServer.java |   2 +-
@@ -22,34 +29,125 @@ Subject: [PATCH] Decompile Errors
  .../minecraft/server/level/ServerPlayer.java  |  19 +--
  .../server/level/TickingTracker.java          |  15 ++-
  .../network/ServerGamePacketListenerImpl.java |   6 +-
+ .../java/net/minecraft/util/ExtraCodecs.java  |  39 +++---
  .../net/minecraft/util/SortedArraySet.java    |   2 +-
+ .../valueproviders/BiasedToBottomInt.java     |   2 +-
+ .../util/valueproviders/ClampedInt.java       |   2 +-
+ .../valueproviders/ClampedNormalFloat.java    |  22 ++--
+ .../util/valueproviders/ClampedNormalInt.java |   2 +-
+ .../util/valueproviders/TrapezoidFloat.java   |  36 +++---
+ .../util/valueproviders/UniformFloat.java     |  22 ++--
+ .../util/valueproviders/UniformInt.java       |   2 +-
  .../net/minecraft/world/entity/Entity.java    |   2 +-
  .../net/minecraft/world/entity/Leashable.java |  10 +-
+ .../net/minecraft/world/entity/ai/Brain.java  |  25 ++--
+ .../entity/ai/gossip/GossipContainer.java     |   2 +-
+ .../ai/sensing/VillagerHostilesSensor.java    |   2 +-
  .../entity/ai/village/poi/PoiManager.java     |   2 +-
  .../entity/ai/village/poi/PoiSection.java     |  16 +--
  .../minecraft/world/entity/animal/Sheep.java  |   8 +-
  .../world/entity/animal/axolotl/Axolotl.java  |  47 ++++----
  .../world/entity/monster/Zoglin.java          |   2 +-
  .../world/entity/monster/hoglin/Hoglin.java   |   4 +-
+ .../monster/warden/AngerManagement.java       |   6 +-
  .../minecraft/world/entity/npc/Villager.java  |  21 ++--
+ .../world/entity/npc/VillagerTrades.java      |  20 ++--
  .../minecraft/world/entity/player/Player.java |  50 +++++---
  .../entity/projectile/AbstractArrow.java      |  35 +++++-
  .../world/item/crafting/RecipeManager.java    |   2 +-
+ .../item/enchantment/ConditionalEffect.java   |   2 +-
+ .../item/enchantment/LevelBasedValue.java     |   2 +-
  .../net/minecraft/world/level/GameRules.java  |   4 +-
  .../minecraft/world/level/biome/Climate.java  |   2 +-
  .../world/level/biome/MobSpawnSettings.java   |   2 +-
  .../world/level/block/SculkSpreader.java      |  26 ++--
  .../level/block/entity/SkullBlockEntity.java  |   2 +-
  .../level/block/entity/vault/VaultConfig.java |  28 +++--
+ .../level/block/state/StateDefinition.java    |  23 ++--
  .../block/state/properties/Property.java      |  12 +-
+ .../world/level/chunk/PalettedContainer.java  |   8 +-
  .../level/gameevent/EntityPositionSource.java |   2 +-
  .../world/level/levelgen/NoiseSettings.java   |   2 +-
+ .../world/level/levelgen/SurfaceRules.java    |  52 ++++----
  .../level/levelgen/blending/BlendingData.java |   2 +-
+ .../levelgen/structure/StructurePiece.java    |   2 +-
+ .../structure/pieces/PiecesContainer.java     |   2 +-
  .../RandomSpreadStructurePlacement.java       |  22 ++--
- 42 files changed, 346 insertions(+), 218 deletions(-)
+ .../structure/structures/JigsawStructure.java |  12 +-
+ .../level/storage/loot/ValidationContext.java |   2 +-
+ .../minecraft/world/scores/Scoreboard.java    |  39 +++---
+ 72 files changed, 544 insertions(+), 382 deletions(-)
 
+diff --git a/src/main/java/net/minecraft/advancements/Advancement.java b/src/main/java/net/minecraft/advancements/Advancement.java
+index 94ca6b6..74f6a57 100644
+--- a/src/main/java/net/minecraft/advancements/Advancement.java
++++ b/src/main/java/net/minecraft/advancements/Advancement.java
+@@ -35,14 +35,14 @@ public record Advancement(
+ ) {
+    private static final Codec<Map<String, Criterion<?>>> CRITERIA_CODEC = Codec.unboundedMap(Codec.STRING, Criterion.CODEC)
+       .validate(criteria -> criteria.isEmpty() ? DataResult.error(() -> "Advancement criteria cannot be empty") : DataResult.success(criteria));
+-   public static final Codec<Advancement> CODEC = RecordCodecBuilder.create(
++   public static final Codec<Advancement> CODEC = RecordCodecBuilder.<Advancement>create( // Pencil - decompile fix
+          instance -> instance.group(
+                   ResourceLocation.CODEC.optionalFieldOf("parent").forGetter(Advancement::parent),
+                   DisplayInfo.CODEC.optionalFieldOf("display").forGetter(Advancement::display),
+                   AdvancementRewards.CODEC.optionalFieldOf("rewards", AdvancementRewards.EMPTY).forGetter(Advancement::rewards),
+                   CRITERIA_CODEC.fieldOf("criteria").forGetter(Advancement::criteria),
+                   AdvancementRequirements.CODEC.optionalFieldOf("requirements").forGetter(advancement -> Optional.of(advancement.requirements())),
+-                  Codec.BOOL.optionalFieldOf("sends_telemetry_event", false).forGetter(Advancement::sendsTelemetryEvent)
++                   Codec.BOOL.optionalFieldOf("sends_telemetry_event", Boolean.valueOf(false)).forGetter(Advancement::sendsTelemetryEvent) // Pencil - decompile fix
+                )
+                .apply(instance, (parent, display, rewards, criteria, requirements, sendsTelemetryEvent) -> {
+                   AdvancementRequirements advancementRequirements = requirements.orElseGet(() -> AdvancementRequirements.allOf(criteria.keySet()));
+diff --git a/src/main/java/net/minecraft/advancements/Criterion.java b/src/main/java/net/minecraft/advancements/Criterion.java
+index f458279..81cb017 100644
+--- a/src/main/java/net/minecraft/advancements/Criterion.java
++++ b/src/main/java/net/minecraft/advancements/Criterion.java
+@@ -6,7 +6,7 @@ import net.minecraft.util.ExtraCodecs;
+ 
+ public record Criterion<T extends CriterionTriggerInstance>(CriterionTrigger<T> trigger, T triggerInstance) {
+    private static final MapCodec<Criterion<?>> MAP_CODEC = ExtraCodecs.dispatchOptionalValue(
+-      "trigger", "conditions", (Codec<CriterionTrigger<T>>)CriteriaTriggers.CODEC, Criterion::trigger, Criterion::criterionCodec
++       "trigger", "conditions", CriteriaTriggers.CODEC, Criterion::trigger, Criterion::criterionCodec // Pencil - decompile fix
+    );
+    public static final Codec<Criterion<?>> CODEC = MAP_CODEC.codec();
+ 
+diff --git a/src/main/java/net/minecraft/commands/Commands.java b/src/main/java/net/minecraft/commands/Commands.java
+index c6aa3eb..885c733 100644
+--- a/src/main/java/net/minecraft/commands/Commands.java
++++ b/src/main/java/net/minecraft/commands/Commands.java
+@@ -367,7 +367,7 @@ public class Commands {
+    ) {
+       for (CommandNode<CommandSourceStack> commandNode : tree.getChildren()) {
+          if (commandNode.canUse(source)) {
+-            ArgumentBuilder<SharedSuggestionProvider, ?> argumentBuilder = commandNode.createBuilder();
++            ArgumentBuilder argumentBuilder = commandNode.createBuilder(); // Pencil - decompile fix
+             argumentBuilder.requires(sourcex -> true);
+             if (argumentBuilder.getCommand() != null) {
+                argumentBuilder.executes(context -> 0);
+diff --git a/src/main/java/net/minecraft/commands/arguments/ArgumentSignatures.java b/src/main/java/net/minecraft/commands/arguments/ArgumentSignatures.java
+index 5e3a249..b989ff5 100644
+--- a/src/main/java/net/minecraft/commands/arguments/ArgumentSignatures.java
++++ b/src/main/java/net/minecraft/commands/arguments/ArgumentSignatures.java
+@@ -14,9 +14,15 @@ public record ArgumentSignatures(List<ArgumentSignatures.Entry> entries) {
+    private static final int MAX_ARGUMENT_NAME_LENGTH = 16;
+ 
+    public ArgumentSignatures(FriendlyByteBuf buf) {
+-      this(buf.readCollection(FriendlyByteBuf.limitValue(ArrayList::new, 8), ArgumentSignatures.Entry::new));
++   // Pencil start - decompile fix
++      this(readSign(buf));
+    }
+ 
++   private static List<ArgumentSignatures.Entry> readSign(FriendlyByteBuf buf) {
++	   return buf.readCollection(FriendlyByteBuf.limitValue(ArrayList::new, 8), Entry::new);
++   }
++   // Pencil end
++
+    public void write(FriendlyByteBuf buf) {
+       buf.writeCollection(this.entries, (buf2, entry) -> entry.write(buf2));
+    }
 diff --git a/src/main/java/net/minecraft/core/BlockPos.java b/src/main/java/net/minecraft/core/BlockPos.java
-index 112664b..4369e65 100644
+index 112664b..610b5c5 100644
 --- a/src/main/java/net/minecraft/core/BlockPos.java
 +++ b/src/main/java/net/minecraft/core/BlockPos.java
 @@ -400,10 +400,10 @@ public class BlockPos extends Vec3i {
@@ -57,11 +155,11 @@ index 112664b..4369e65 100644
  
     public static Iterable<BlockPos> betweenClosed(int startX, int startY, int startZ, int endX, int endY, int endZ) {
 -      int i = endX - startX + 1;
-+      int ia = endX - startX + 1; // Pencil - decompile error
++      int ia = endX - startX + 1; // Pencil - decompile fix
        int j = endY - startY + 1;
        int k = endZ - startZ + 1;
 -      int l = i * j * k;
-+      int l = ia * j * k; // Pencil - decompile error
++      int l = ia * j * k; // Pencil - decompile fix
        return () -> new AbstractIterator<BlockPos>() {
              private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
              private int index;
@@ -70,12 +168,12 @@ index 112664b..4369e65 100644
                    return (BlockPos)this.endOfData();
                 } else {
 -                  int i = this.index % i;
-+                  int i = this.index % ia; // Pencil - decompile error
++                  int i = this.index % ia; // Pencil - decompile fix
                    int j = this.index / i;
                    int k = j % j;
                    int l = j / j;
 diff --git a/src/main/java/net/minecraft/core/HolderLookup.java b/src/main/java/net/minecraft/core/HolderLookup.java
-index eab6975..0f0d550 100644
+index eab6975..0ec413f 100644
 --- a/src/main/java/net/minecraft/core/HolderLookup.java
 +++ b/src/main/java/net/minecraft/core/HolderLookup.java
 @@ -36,7 +36,7 @@ public interface HolderLookup<T> extends HolderGetter<T> {
@@ -83,19 +181,19 @@ index eab6975..0f0d550 100644
  
        default <V> RegistryOps<V> createSerializationContext(DynamicOps<V> delegate) {
 -         return RegistryOps.create((DynamicOps<T>)delegate, this);
-+         return RegistryOps.create(delegate, this); // Pencil - decompile error
++         return RegistryOps.create(delegate, this); // Pencil - decompile fix
        }
  
        default HolderGetter.Provider asGetterLookup() {
 diff --git a/src/main/java/net/minecraft/core/Registry.java b/src/main/java/net/minecraft/core/Registry.java
-index c888c1e..d02e770 100644
+index c888c1e..7f06969 100644
 --- a/src/main/java/net/minecraft/core/Registry.java
 +++ b/src/main/java/net/minecraft/core/Registry.java
 @@ -34,14 +34,16 @@ public interface Registry<T> extends Keyable, IdMap<T> {
     }
  
     private Codec<Holder.Reference<T>> referenceHolderWithLifecycle() {
-+      // Pencil start - decompile error
++      // Pencil start - decompile fix
        Codec<Holder.Reference<T>> codec = ResourceLocation.CODEC
 -         .comapFlatMap(
 -            id -> this.getHolder(id)
@@ -116,7 +214,7 @@ index c888c1e..d02e770 100644
  
     private DataResult<Holder.Reference<T>> safeCastToReference(Holder<T> entry) {
 diff --git a/src/main/java/net/minecraft/core/component/DataComponentPatch.java b/src/main/java/net/minecraft/core/component/DataComponentPatch.java
-index 627e0d2..d00f2be 100644
+index 627e0d2..6dc5fe3 100644
 --- a/src/main/java/net/minecraft/core/component/DataComponentPatch.java
 +++ b/src/main/java/net/minecraft/core/component/DataComponentPatch.java
 @@ -55,7 +55,7 @@ public final class DataComponentPatch {
@@ -124,12 +222,12 @@ index 627e0d2..d00f2be 100644
           }
  
 -         return reference2ObjectMap;
-+         return (Reference2ObjectMap) reference2ObjectMap; // Pencil - decompile error
++         return (Reference2ObjectMap) reference2ObjectMap; // Pencil - decompile fix
        });
     public static final StreamCodec<RegistryFriendlyByteBuf, DataComponentPatch> STREAM_CODEC = new StreamCodec<RegistryFriendlyByteBuf, DataComponentPatch>() {
        public DataComponentPatch decode(RegistryFriendlyByteBuf registryFriendlyByteBuf) {
 diff --git a/src/main/java/net/minecraft/core/component/DataComponentType.java b/src/main/java/net/minecraft/core/component/DataComponentType.java
-index 301c44f..5af6bac 100644
+index 301c44f..1cf0ac3 100644
 --- a/src/main/java/net/minecraft/core/component/DataComponentType.java
 +++ b/src/main/java/net/minecraft/core/component/DataComponentType.java
 @@ -100,7 +100,7 @@ public interface DataComponentType<T> {
@@ -137,12 +235,12 @@ index 301c44f..5af6bac 100644
           @Override
           public String toString() {
 -            return Util.getRegisteredName((Registry<DataComponentType.Builder.SimpleType<T>>)BuiltInRegistries.DATA_COMPONENT_TYPE, this);
-+            return Util.getRegisteredName(BuiltInRegistries.DATA_COMPONENT_TYPE, this); // Pencil - decompile error
++            return Util.getRegisteredName(BuiltInRegistries.DATA_COMPONENT_TYPE, this); // Pencil - decompile fix
           }
        }
     }
 diff --git a/src/main/java/net/minecraft/core/component/TypedDataComponent.java b/src/main/java/net/minecraft/core/component/TypedDataComponent.java
-index bb02223..88a6d29 100644
+index bb02223..4579dd1 100644
 --- a/src/main/java/net/minecraft/core/component/TypedDataComponent.java
 +++ b/src/main/java/net/minecraft/core/component/TypedDataComponent.java
 @@ -11,7 +11,7 @@ public record TypedDataComponent<T>(DataComponentType<T> type, T value) {
@@ -150,7 +248,7 @@ index bb02223..88a6d29 100644
        public TypedDataComponent<?> decode(RegistryFriendlyByteBuf registryFriendlyByteBuf) {
           DataComponentType<?> dataComponentType = DataComponentType.STREAM_CODEC.decode(registryFriendlyByteBuf);
 -         return decodeTyped(registryFriendlyByteBuf, (DataComponentType<T>)dataComponentType);
-+         return decodeTyped(registryFriendlyByteBuf, dataComponentType); // Pencil - decompile error
++         return decodeTyped(registryFriendlyByteBuf, dataComponentType); // Pencil - decompile fix
        }
  
        private static <T> TypedDataComponent<T> decodeTyped(RegistryFriendlyByteBuf buf, DataComponentType<T> type) {
@@ -159,12 +257,12 @@ index bb02223..88a6d29 100644
  
        public void encode(RegistryFriendlyByteBuf registryFriendlyByteBuf, TypedDataComponent<?> typedDataComponent) {
 -         encodeCap(registryFriendlyByteBuf, (TypedDataComponent<T>)typedDataComponent);
-+         encodeCap(registryFriendlyByteBuf, typedDataComponent); // Pencil - decompile error
++         encodeCap(registryFriendlyByteBuf, typedDataComponent); // Pencil - decompile fix
        }
  
        private static <T> void encodeCap(RegistryFriendlyByteBuf buf, TypedDataComponent<T> component) {
 diff --git a/src/main/java/net/minecraft/nbt/NbtOps.java b/src/main/java/net/minecraft/nbt/NbtOps.java
-index f8f4c3d..421ef2e 100644
+index f8f4c3d..eff4ed5 100644
 --- a/src/main/java/net/minecraft/nbt/NbtOps.java
 +++ b/src/main/java/net/minecraft/nbt/NbtOps.java
 @@ -10,15 +10,11 @@ import it.unimi.dsi.fastutil.bytes.ByteArrayList;
@@ -194,7 +292,7 @@ index f8f4c3d..421ef2e 100644
 -            biConsumer.accept(this.createString(entry.getKey()), entry.getValue());
 -         }
 -      }) : DataResult.error(() -> "Not a map: " + tag);
-+      // Pencil start - decompile error
++      // Pencil start - decompile fix
 +      if (tag instanceof CompoundTag compoundTag) {
 +         return DataResult.success((biConsumer) -> {
 +            Iterator var3 = compoundTag.entrySet().iterator();
@@ -218,7 +316,7 @@ index f8f4c3d..421ef2e 100644
     }
  
     public DataResult<Consumer<Consumer<Tag>>> getList(Tag tag) {
-+      // Pencil start - decompile error
++      // Pencil start - decompile fix
        if (tag instanceof ListTag listTag) {
 -         return listTag.getElementType() == 10 ? DataResult.success((Consumer<Consumer>)consumer -> {
 -            for (Tag tagx : listTag) {
@@ -253,7 +351,7 @@ index f8f4c3d..421ef2e 100644
  
     public DataResult<ByteBuffer> getByteBuffer(Tag tag) {
 -      return tag instanceof ByteArrayTag byteArrayTag ? DataResult.success(ByteBuffer.wrap(byteArrayTag.getAsByteArray())) : super.getByteBuffer(tag);
-+      // Pencil start - decompile error
++      // Pencil start - decompile fix
 +	   if (tag instanceof ByteArrayTag byteArrayTag)
 +		   return DataResult.success(ByteBuffer.wrap(byteArrayTag.getAsByteArray()));
 +      return this.getStream(tag).flatMap((stream) -> {
@@ -274,7 +372,7 @@ index f8f4c3d..421ef2e 100644
 +            return DataResult.success(buffer);
 +         }
 +      });
-+      // Pencil end - decompile error
++      // Pencil end - decompile fix
     }
  
     public Tag createByteList(ByteBuffer byteBuffer) {
@@ -283,7 +381,7 @@ index f8f4c3d..421ef2e 100644
  
     public DataResult<IntStream> getIntStream(Tag tag) {
 -      return tag instanceof IntArrayTag intArrayTag ? DataResult.success(Arrays.stream(intArrayTag.getAsIntArray())) : super.getIntStream(tag);
-+      // Pencil start - decompile error
++      // Pencil start - decompile fix
 +	   if (tag instanceof IntArrayTag intArrayTag)
 +		   return DataResult.success(Arrays.stream(intArrayTag.getAsIntArray()));
 +      return this.getStream(tag).flatMap((stream) -> {
@@ -305,7 +403,7 @@ index f8f4c3d..421ef2e 100644
  
     public DataResult<LongStream> getLongStream(Tag tag) {
 -      return tag instanceof LongArrayTag longArrayTag ? DataResult.success(Arrays.stream(longArrayTag.getAsLongArray())) : super.getLongStream(tag);
-+      // Pencil start - decompile error
++      // Pencil start - decompile fix
 +	   if (tag instanceof LongArrayTag longArrayTag)
 +		   return DataResult.success(Arrays.stream(longArrayTag.getAsLongArray()));
 +      return this.getStream(tag).flatMap((stream) -> {
@@ -323,7 +421,7 @@ index f8f4c3d..421ef2e 100644
  
     public Tag createLongList(LongStream longStream) {
 diff --git a/src/main/java/net/minecraft/network/chat/LastSeenMessages.java b/src/main/java/net/minecraft/network/chat/LastSeenMessages.java
-index 3ec2f35..ae0420a 100644
+index 3ec2f35..20b9a8f 100644
 --- a/src/main/java/net/minecraft/network/chat/LastSeenMessages.java
 +++ b/src/main/java/net/minecraft/network/chat/LastSeenMessages.java
 @@ -31,7 +31,7 @@ public record LastSeenMessages(List<MessageSignature> entries) {
@@ -331,12 +429,12 @@ index 3ec2f35..ae0420a 100644
  
        public Packed(FriendlyByteBuf buf) {
 -         this(buf.readCollection(FriendlyByteBuf.limitValue(ArrayList::new, 20), MessageSignature.Packed::read));
-+         this((List)buf.readCollection(FriendlyByteBuf.limitValue(ArrayList::new, 20), MessageSignature.Packed::read)); // Pencil - decompile error
++         this((List)buf.readCollection(FriendlyByteBuf.limitValue(ArrayList::new, 20), MessageSignature.Packed::read)); // Pencil - decompile fix
        }
  
        public void write(FriendlyByteBuf buf) {
 diff --git a/src/main/java/net/minecraft/network/codec/StreamCodec.java b/src/main/java/net/minecraft/network/codec/StreamCodec.java
-index ffb5148..3072718 100644
+index ffb5148..210a152 100644
 --- a/src/main/java/net/minecraft/network/codec/StreamCodec.java
 +++ b/src/main/java/net/minecraft/network/codec/StreamCodec.java
 @@ -290,7 +290,7 @@ public interface StreamCodec<B, V> extends StreamDecoder<B, V>, StreamEncoder<B,
@@ -344,12 +442,72 @@ index ffb5148..3072718 100644
  
     default <S extends B> StreamCodec<S, V> cast() {
 -      return this;
-+      return (StreamCodec<S, V>) this; // Pencil - decompile error
++      return (StreamCodec<S, V>) this; // Pencil - decompile fix
     }
  
     @FunctionalInterface
+diff --git a/src/main/java/net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket.java b/src/main/java/net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket.java
+index 267fcbf..a0d80e3 100644
+--- a/src/main/java/net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket.java
++++ b/src/main/java/net/minecraft/network/protocol/common/ClientboundCustomPayloadPacket.java
+@@ -36,7 +36,7 @@ public record ClientboundCustomPayloadPacket(CustomPacketPayload payload) implem
+          id -> DiscardedPayload.codec(id, 1048576),
+          Util.make(
+             Lists.newArrayList(
+-               new CustomPacketPayload.TypeAndCodec[]{
++               // new CustomPacketPayload.TypeAndCodec[]{ // Pencil - decompile fix
+                   new CustomPacketPayload.TypeAndCodec<>(BrandPayload.TYPE, BrandPayload.STREAM_CODEC),
+                   new CustomPacketPayload.TypeAndCodec<>(BeeDebugPayload.TYPE, BeeDebugPayload.STREAM_CODEC),
+                   new CustomPacketPayload.TypeAndCodec<>(BrainDebugPayload.TYPE, BrainDebugPayload.STREAM_CODEC),
+@@ -56,7 +56,7 @@ public record ClientboundCustomPayloadPacket(CustomPacketPayload payload) implem
+                   new CustomPacketPayload.TypeAndCodec<>(StructuresDebugPayload.TYPE, StructuresDebugPayload.STREAM_CODEC),
+                   new CustomPacketPayload.TypeAndCodec<>(VillageSectionsDebugPayload.TYPE, VillageSectionsDebugPayload.STREAM_CODEC),
+                   new CustomPacketPayload.TypeAndCodec<>(WorldGenAttemptDebugPayload.TYPE, WorldGenAttemptDebugPayload.STREAM_CODEC)
+-               }
++               // } // Pencil - decompile fix
+             ),
+             types -> {
+             }
+diff --git a/src/main/java/net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket.java b/src/main/java/net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket.java
+index 63f7e9b..0bb3d9e 100644
+--- a/src/main/java/net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket.java
++++ b/src/main/java/net/minecraft/network/protocol/common/ServerboundCustomPayloadPacket.java
+@@ -12,15 +12,11 @@ import net.minecraft.network.protocol.common.custom.DiscardedPayload;
+ 
+ public record ServerboundCustomPayloadPacket(CustomPacketPayload payload) implements Packet<ServerCommonPacketListener> {
+    private static final int MAX_PAYLOAD_SIZE = 32767;
+-   public static final StreamCodec<FriendlyByteBuf, ServerboundCustomPayloadPacket> STREAM_CODEC = CustomPacketPayload.<FriendlyByteBuf>codec(
+-         id -> DiscardedPayload.codec(id, 32767),
+-         Util.make(
+-            Lists.newArrayList(new CustomPacketPayload.TypeAndCodec[]{new CustomPacketPayload.TypeAndCodec<>(BrandPayload.TYPE, BrandPayload.STREAM_CODEC)}),
+-            types -> {
+-            }
+-         )
+-      )
+-      .map(ServerboundCustomPayloadPacket::new, ServerboundCustomPayloadPacket::payload);
++   // Pencil start - decompile fix
++   public static final StreamCodec<FriendlyByteBuf, ServerboundCustomPayloadPacket> STREAM_CODEC = CustomPacketPayload.codec((minecraftkey) -> {
++      return DiscardedPayload.codec(minecraftkey, 32767);
++   }, java.util.Collections.emptyList()).map(ServerboundCustomPayloadPacket::new, ServerboundCustomPayloadPacket::payload);
++   // Pencil end
+ 
+    @Override
+    public PacketType<ServerboundCustomPayloadPacket> type() {
+diff --git a/src/main/java/net/minecraft/network/protocol/common/custom/CustomPacketPayload.java b/src/main/java/net/minecraft/network/protocol/common/custom/CustomPacketPayload.java
+index ed42021..e5decf1 100644
+--- a/src/main/java/net/minecraft/network/protocol/common/custom/CustomPacketPayload.java
++++ b/src/main/java/net/minecraft/network/protocol/common/custom/CustomPacketPayload.java
+@@ -34,7 +34,7 @@ public interface CustomPacketPayload {
+ 
+          private <T extends CustomPacketPayload> void writeCap(B value, CustomPacketPayload.Type<T> id, CustomPacketPayload payload) {
+             value.writeResourceLocation(id.id());
+-            StreamCodec<B, T> streamCodec = this.findCodec(id.id);
++            StreamCodec streamCodec = this.findCodec(id.id); // Pencil - decompile fix
+             streamCodec.encode(value, (T)payload);
+          }
+ 
 diff --git a/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java b/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
-index f57ffa6..afdd2be 100644
+index f57ffa6..ee56963 100644
 --- a/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
 +++ b/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
 @@ -13,7 +13,7 @@ public interface EntityDataSerializer<T> {
@@ -357,12 +515,12 @@ index f57ffa6..afdd2be 100644
  
     static <T> EntityDataSerializer<T> forValueType(StreamCodec<? super RegistryFriendlyByteBuf, T> codec) {
 -      return () -> codec;
-+      return (ForValueType<T>) () -> codec; // Pencil - decompile error
++      return (ForValueType<T>) () -> codec; // Pencil - decompile fix
     }
  
     public interface ForValueType<T> extends EntityDataSerializer<T> {
 diff --git a/src/main/java/net/minecraft/resources/RegistryOps.java b/src/main/java/net/minecraft/resources/RegistryOps.java
-index 89232a4..96f4092 100644
+index 89232a4..4ef4095 100644
 --- a/src/main/java/net/minecraft/resources/RegistryOps.java
 +++ b/src/main/java/net/minecraft/resources/RegistryOps.java
 @@ -83,7 +83,7 @@ public class RegistryOps<T> extends DelegatingOps<T> {
@@ -370,12 +528,12 @@ index 89232a4..96f4092 100644
                       .lookup(resourceKey)
                       .flatMap(info -> info.getter().get(key))
 -                     .<DataResult<E>>map(DataResult::success)
-+                .map(DataResult::success) // Pencil - decompile error
++                .map(DataResult::success) // Pencil - decompile fix
                       .orElseGet(() -> DataResult.error(() -> "Can't find value: " + key))
                    : DataResult.error(() -> "Not a registry ops")
           )
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 9b30256..d23fc54 100644
+index 9b30256..77350dc 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -855,7 +855,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
@@ -383,12 +541,12 @@ index 9b30256..d23fc54 100644
     }
  
 -   protected void doRunTask(TickTask tickTask) {
-+   public void doRunTask(TickTask tickTask) { // Pencil - decompile error
++   public void doRunTask(TickTask tickTask) { // Pencil - decompile fix
        this.getProfiler().incrementCounter("runTask");
        super.doRunTask(tickTask);
     }
 diff --git a/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java b/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java
-index 1f06d30..359758b 100644
+index 1f06d30..26a8482 100644
 --- a/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java
 +++ b/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java
 @@ -16,9 +16,11 @@ import net.minecraft.world.level.ChunkPos;
@@ -398,7 +556,7 @@ index 1f06d30..359758b 100644
 -   private final List<Long2ObjectLinkedOpenHashMap<List<Optional<T>>>> taskQueue = IntStream.range(0, PRIORITY_LEVEL_COUNT)
 -      .mapToObj(i -> new Long2ObjectLinkedOpenHashMap())
 -      .collect(Collectors.toList());
-+   // Pencil start - decompile error
++   // Pencil start - decompile fix
 +   private final List<Long2ObjectLinkedOpenHashMap<List<Optional<T>>>> taskQueue = (List)IntStream.range(0, PRIORITY_LEVEL_COUNT).mapToObj((i) -> {
 +      return new Long2ObjectLinkedOpenHashMap();
 +   }).collect(Collectors.toList());
@@ -411,7 +569,7 @@ index 1f06d30..359758b 100644
           }
  
 -         return list.stream().map(optional -> optional.map(Either::left).orElseGet(() -> Either.right(this.acquire(l))));
-+         // Pencil start - decompile error
++         // Pencil start - decompile fix
 +         return list.stream().map((optional) -> {
 +            return (Either)optional.map(Either::left).orElseGet(() -> {
 +               return Either.right(this.acquire(l));
@@ -422,7 +580,7 @@ index 1f06d30..359758b 100644
     }
  
 diff --git a/src/main/java/net/minecraft/server/level/DistanceManager.java b/src/main/java/net/minecraft/server/level/DistanceManager.java
-index d06de01..635056c 100644
+index d06de01..5a7f66d 100644
 --- a/src/main/java/net/minecraft/server/level/DistanceManager.java
 +++ b/src/main/java/net/minecraft/server/level/DistanceManager.java
 @@ -270,22 +270,7 @@ public abstract class DistanceManager {
@@ -445,12 +603,12 @@ index d06de01..635056c 100644
 -      } catch (IOException var10) {
 -         LOGGER.error("Failed to dump tickets to {}", path, var10);
 -      }
-+      throw new UnsupportedOperationException(); // Pencil - decompile error
++      throw new UnsupportedOperationException(); // Pencil - decompile fix
     }
  
     @VisibleForTesting
 diff --git a/src/main/java/net/minecraft/server/level/ServerLevel.java b/src/main/java/net/minecraft/server/level/ServerLevel.java
-index 36cbb10..6e8b9e6 100644
+index 36cbb10..81773d6 100644
 --- a/src/main/java/net/minecraft/server/level/ServerLevel.java
 +++ b/src/main/java/net/minecraft/server/level/ServerLevel.java
 @@ -19,14 +19,7 @@ import java.io.IOException;
@@ -474,7 +632,7 @@ index 36cbb10..6e8b9e6 100644
     private static <T> String getTypeCount(Iterable<T> items, Function<T, String> classifier) {
        try {
 -         Object2IntOpenHashMap<String> object2IntOpenHashMap = new Object2IntOpenHashMap();
-+         // Pencil start - decompile error
++         // Pencil start - decompile fix
 +         Object2IntOpenHashMap<String> object2intopenhashmap = new Object2IntOpenHashMap();
 +         Iterator<T> iterator = items.iterator();
  
@@ -504,7 +662,7 @@ index 36cbb10..6e8b9e6 100644
           return "";
        }
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 0b085fc..4ebf4d4 100644
+index 0b085fc..fe4b814 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 @@ -4,13 +4,10 @@ import com.google.common.net.InetAddresses;
@@ -531,19 +689,19 @@ index 0b085fc..4ebf4d4 100644
 -            .parse(new Dynamic(NbtOps.INSTANCE, nbt.get("warden_spawn_tracker")))
 -            .resultOrPartial(LOGGER::error)
 -            .ifPresent(sculkShriekerWarningManager -> this.wardenSpawnTracker = sculkShriekerWarningManager);
-+         // Pencil start - decompile error
++         // Pencil start - decompile fix
 +		  DataResult dataresult = WardenSpawnTracker.CODEC.parse(new Dynamic(NbtOps.INSTANCE, nbt.get("warden_spawn_tracker")));
 +		  Logger logger = ServerPlayer.LOGGER;
 +         Objects.requireNonNull(logger);
 +         ((DataResult<WardenSpawnTracker>) dataresult).resultOrPartial(logger::error).ifPresent((wardenspawntracker) -> {
 +            this.wardenSpawnTracker = wardenspawntracker;
 +         });
-+         // Pencil start - decompile error
++         // Pencil start - decompile fix
        }
  
        if (nbt.contains("enteredNetherPosition", 10)) {
 diff --git a/src/main/java/net/minecraft/server/level/TickingTracker.java b/src/main/java/net/minecraft/server/level/TickingTracker.java
-index 1c6d165..ec646ee 100644
+index 1c6d165..eb73c83 100644
 --- a/src/main/java/net/minecraft/server/level/TickingTracker.java
 +++ b/src/main/java/net/minecraft/server/level/TickingTracker.java
 @@ -60,21 +60,20 @@ public class TickingTracker extends ChunkTracker {
@@ -556,7 +714,7 @@ index 1c6d165..ec646ee 100644
 -         Entry<SortedArraySet<Ticket<?>>> entry = (Entry<SortedArraySet<Ticket<?>>>)var3.next();
 -
 -         for (Ticket<?> ticket : (SortedArraySet)entry.getValue()) {
-+      // Pencil start - decompile error
++      // Pencil start - decompile fix
 +      for (Entry<SortedArraySet<Ticket<?>>> entry : this.tickets.long2ObjectEntrySet()) {
 +         for (Ticket<?> ticket : entry.getValue()) {
              if (ticket.getType() == TicketType.PLAYER) {
@@ -576,7 +734,7 @@ index 1c6d165..ec646ee 100644
           ChunkPos chunkPos = new ChunkPos(long_);
           TicketType<ChunkPos> ticketType = ticket2.getType();
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 0084c00..cc9add5 100644
+index 0084c00..811be3b 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -786,7 +786,11 @@ public class ServerGamePacketListenerImpl
@@ -584,7 +742,7 @@ index 0084c00..cc9add5 100644
           ItemStack itemStack2 = itemStack.transmuteCopy(Items.WRITTEN_BOOK);
           itemStack2.remove(DataComponents.WRITABLE_BOOK_CONTENT);
 -         List<Filterable<Component>> list = pages.stream().map(page -> this.filterableFromOutgoing(page).map(Component::literal)).toList();
-+         // Pencil start - decompile error
++         // Pencil start - decompile fix
 +         List<Filterable<Component>> list = (List<Filterable<Component>>) (List) pages.stream().map((filteredtext1) -> {
 +            return this.filterableFromOutgoing(filteredtext1).map(s -> Component.literal(s));
 +         }).toList();
@@ -592,8 +750,75 @@ index 0084c00..cc9add5 100644
           itemStack2.set(
              DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(this.filterableFromOutgoing(title), this.player.getName().getString(), 0, list, true)
           );
+diff --git a/src/main/java/net/minecraft/util/ExtraCodecs.java b/src/main/java/net/minecraft/util/ExtraCodecs.java
+index a48360a..7664280 100644
+--- a/src/main/java/net/minecraft/util/ExtraCodecs.java
++++ b/src/main/java/net/minecraft/util/ExtraCodecs.java
+@@ -218,25 +218,28 @@ public class ExtraCodecs {
+       Function<I, P> leftFunction,
+       Function<I, P> rightFunction
+    ) {
+-      Codec<I> codec2 = Codec.list(codec).comapFlatMap(list -> Util.fixedSize(list, 2).flatMap(listx -> {
+-            P object = (P)listx.get(0);
+-            P object2 = (P)listx.get(1);
+-            return combineFunction.apply(object, object2);
+-         }), pair -> ImmutableList.of(leftFunction.apply((I)pair), rightFunction.apply((I)pair)));
+-      Codec<I> codec3 = RecordCodecBuilder.create(
+-            instance -> instance.group(codec.fieldOf(leftFieldName).forGetter(Pair::getFirst), codec.fieldOf(rightFieldName).forGetter(Pair::getSecond))
++      // Pencil start - decompile fix
++      Codec<I> codec2 = Codec.list(codec).comapFlatMap(list -> Util.fixedSize((List<P>)list, 2).flatMap(listx -> {
++         P object = listx.get(0);
++         P object2 = listx.get(1);
++         return combineFunction.apply(object, object2);
++      }), pair -> ImmutableList.of(leftFunction.apply((I)pair), rightFunction.apply((I)pair)));
++      Codec<I> codec3 = RecordCodecBuilder.<Pair>create(
++              instance -> instance.group(codec.fieldOf(leftFieldName).forGetter(pair -> (P) pair.getFirst()), codec.fieldOf(rightFieldName).forGetter(pair -> (P) pair.getSecond()))
+                   .apply(instance, Pair::of)
+-         )
+-         .comapFlatMap(
+-            pair -> combineFunction.apply((P)pair.getFirst(), (P)pair.getSecond()), pair -> Pair.of(leftFunction.apply((I)pair), rightFunction.apply((I)pair))
+-         );
++          )
++          .comapFlatMap(
++              pair -> combineFunction.apply((P)pair.getFirst(), (P)pair.getSecond()),
++              pair -> Pair.of(leftFunction.apply((I)pair), rightFunction.apply((I)pair))
++          );
+       Codec<I> codec4 = Codec.withAlternative(codec2, codec3);
+       return Codec.either(codec, codec4)
+-         .comapFlatMap(either -> (DataResult)either.map(object -> combineFunction.apply((P)object, (P)object), DataResult::success), pair -> {
+-            P object = leftFunction.apply((I)pair);
+-            P object2 = rightFunction.apply((I)pair);
+-            return Objects.equals(object, object2) ? Either.left(object) : Either.right(pair);
+-         });
++          .comapFlatMap(either -> either.map(object -> combineFunction.apply((P)object, (P)object), DataResult::success), pair -> {
++             P object = leftFunction.apply((I)pair);
++             P object2 = rightFunction.apply((I)pair);
++             return Objects.equals(object, object2) ? Either.left(object) : Either.right((I)pair);
++          });
++      // Pencil end
+    }
+ 
+    public static <A> ResultFunction<A> orElsePartial(A object) {
+@@ -246,7 +249,7 @@ public class ExtraCodecs {
+             Optional<Pair<A, T>> optional = dataResult.resultOrPartial(mutableObject::setValue);
+             return optional.isPresent()
+                ? dataResult
+-               : DataResult.error(() -> "(" + (String)mutableObject.getValue() + " -> using default)", Pair.of(object, object));
++                : DataResult.error(() -> "(" + mutableObject.getValue() + " -> using default)", Pair.of((A) object, object)); // Pencil - decompile fix
+          }
+ 
+          public <T> DataResult<T> coApply(DynamicOps<T> dynamicOps, A object, DataResult<T> dataResult) {
+@@ -481,7 +484,7 @@ public class ExtraCodecs {
+          }
+ 
+          private <T, V2 extends V> DataResult<T> encode(Codec<V2> codec, V value, DynamicOps<T> ops) {
+-            return codec.encodeStart(ops, value);
++            return codec.encodeStart(ops, (V2)value); // Pencil - decompile fix
+          }
+       };
+    }
 diff --git a/src/main/java/net/minecraft/util/SortedArraySet.java b/src/main/java/net/minecraft/util/SortedArraySet.java
-index 1897e9a..acd03a4 100644
+index 1897e9a..a6d1ab8 100644
 --- a/src/main/java/net/minecraft/util/SortedArraySet.java
 +++ b/src/main/java/net/minecraft/util/SortedArraySet.java
 @@ -28,7 +28,7 @@ public class SortedArraySet<T> extends AbstractSet<T> {
@@ -601,12 +826,186 @@ index 1897e9a..acd03a4 100644
  
     public static <T extends Comparable<T>> SortedArraySet<T> create(int initialCapacity) {
 -      return new SortedArraySet<>(initialCapacity, Comparator.naturalOrder());
-+      return new SortedArraySet<>(initialCapacity, Comparator.<T>naturalOrder()); // Pencil - decompile error
++      return new SortedArraySet<>(initialCapacity, Comparator.<T>naturalOrder()); // Pencil - decompile fix
     }
  
     public static <T> SortedArraySet<T> create(Comparator<T> comparator) {
+diff --git a/src/main/java/net/minecraft/util/valueproviders/BiasedToBottomInt.java b/src/main/java/net/minecraft/util/valueproviders/BiasedToBottomInt.java
+index cd0dfb9..ee5bc40 100644
+--- a/src/main/java/net/minecraft/util/valueproviders/BiasedToBottomInt.java
++++ b/src/main/java/net/minecraft/util/valueproviders/BiasedToBottomInt.java
+@@ -7,7 +7,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
+ import net.minecraft.util.RandomSource;
+ 
+ public class BiasedToBottomInt extends IntProvider {
+-   public static final MapCodec<BiasedToBottomInt> CODEC = RecordCodecBuilder.mapCodec(
++   public static final MapCodec<BiasedToBottomInt> CODEC = RecordCodecBuilder.<BiasedToBottomInt>mapCodec( // Pencil - decompile fix
+          instance -> instance.group(
+                   Codec.INT.fieldOf("min_inclusive").forGetter(provider -> provider.minInclusive),
+                   Codec.INT.fieldOf("max_inclusive").forGetter(provider -> provider.maxInclusive)
+diff --git a/src/main/java/net/minecraft/util/valueproviders/ClampedInt.java b/src/main/java/net/minecraft/util/valueproviders/ClampedInt.java
+index f649524..6efc230 100644
+--- a/src/main/java/net/minecraft/util/valueproviders/ClampedInt.java
++++ b/src/main/java/net/minecraft/util/valueproviders/ClampedInt.java
+@@ -8,7 +8,7 @@ import net.minecraft.util.Mth;
+ import net.minecraft.util.RandomSource;
+ 
+ public class ClampedInt extends IntProvider {
+-   public static final MapCodec<ClampedInt> CODEC = RecordCodecBuilder.mapCodec(
++   public static final MapCodec<ClampedInt> CODEC = RecordCodecBuilder.<ClampedInt>mapCodec( // Pencil - decompile fix
+          instance -> instance.group(
+                   IntProvider.CODEC.fieldOf("source").forGetter(provider -> provider.source),
+                   Codec.INT.fieldOf("min_inclusive").forGetter(provider -> provider.minInclusive),
+diff --git a/src/main/java/net/minecraft/util/valueproviders/ClampedNormalFloat.java b/src/main/java/net/minecraft/util/valueproviders/ClampedNormalFloat.java
+index 8e9bc31..5c1cca6 100644
+--- a/src/main/java/net/minecraft/util/valueproviders/ClampedNormalFloat.java
++++ b/src/main/java/net/minecraft/util/valueproviders/ClampedNormalFloat.java
+@@ -8,20 +8,22 @@ import net.minecraft.util.Mth;
+ import net.minecraft.util.RandomSource;
+ 
+ public class ClampedNormalFloat extends FloatProvider {
+-   public static final MapCodec<ClampedNormalFloat> CODEC = RecordCodecBuilder.mapCodec(
+-         instance -> instance.group(
+-                  Codec.FLOAT.fieldOf("mean").forGetter(provider -> provider.mean),
+-                  Codec.FLOAT.fieldOf("deviation").forGetter(provider -> provider.deviation),
+-                  Codec.FLOAT.fieldOf("min").forGetter(provider -> provider.min),
+-                  Codec.FLOAT.fieldOf("max").forGetter(provider -> provider.max)
++   // Pencil start - decompile fix
++   public static final MapCodec<ClampedNormalFloat> CODEC = RecordCodecBuilder.<ClampedNormalFloat>mapCodec(
++           instance -> instance.group(
++                   Codec.FLOAT.fieldOf("mean").forGetter(provider -> provider.mean),
++                   Codec.FLOAT.fieldOf("deviation").forGetter(provider -> provider.deviation),
++                   Codec.FLOAT.fieldOf("min").forGetter(provider -> provider.min),
++                   Codec.FLOAT.fieldOf("max").forGetter(provider -> provider.max)
+                )
+                .apply(instance, ClampedNormalFloat::new)
+-      )
+-      .validate(
+-         provider -> provider.max < provider.min
++       )
++       .validate(
++           provider -> provider.max < provider.min
+                ? DataResult.error(() -> "Max must be larger than min: [" + provider.min + ", " + provider.max + "]")
+                : DataResult.success(provider)
+-      );
++       );
++   // Pencil end
+    private final float mean;
+    private final float deviation;
+    private final float min;
+diff --git a/src/main/java/net/minecraft/util/valueproviders/ClampedNormalInt.java b/src/main/java/net/minecraft/util/valueproviders/ClampedNormalInt.java
+index 3e35a66..aff44aa 100644
+--- a/src/main/java/net/minecraft/util/valueproviders/ClampedNormalInt.java
++++ b/src/main/java/net/minecraft/util/valueproviders/ClampedNormalInt.java
+@@ -8,7 +8,7 @@ import net.minecraft.util.Mth;
+ import net.minecraft.util.RandomSource;
+ 
+ public class ClampedNormalInt extends IntProvider {
+-   public static final MapCodec<ClampedNormalInt> CODEC = RecordCodecBuilder.mapCodec(
++   public static final MapCodec<ClampedNormalInt> CODEC = RecordCodecBuilder.<ClampedNormalInt>mapCodec( // Pencil - decompile fix
+          instance -> instance.group(
+                   Codec.FLOAT.fieldOf("mean").forGetter(provider -> provider.mean),
+                   Codec.FLOAT.fieldOf("deviation").forGetter(provider -> provider.deviation),
+diff --git a/src/main/java/net/minecraft/util/valueproviders/TrapezoidFloat.java b/src/main/java/net/minecraft/util/valueproviders/TrapezoidFloat.java
+index f9202d6..aa914cb 100644
+--- a/src/main/java/net/minecraft/util/valueproviders/TrapezoidFloat.java
++++ b/src/main/java/net/minecraft/util/valueproviders/TrapezoidFloat.java
+@@ -7,25 +7,27 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
+ import net.minecraft.util.RandomSource;
+ 
+ public class TrapezoidFloat extends FloatProvider {
+-   public static final MapCodec<TrapezoidFloat> CODEC = RecordCodecBuilder.mapCodec(
+-         instance -> instance.group(
+-                  Codec.FLOAT.fieldOf("min").forGetter(provider -> provider.min),
+-                  Codec.FLOAT.fieldOf("max").forGetter(provider -> provider.max),
+-                  Codec.FLOAT.fieldOf("plateau").forGetter(provider -> provider.plateau)
++   // Pencil start - decompile fix
++   public static final MapCodec<TrapezoidFloat> CODEC = RecordCodecBuilder.<TrapezoidFloat>mapCodec(
++           instance -> instance.group(
++                   Codec.FLOAT.fieldOf("min").forGetter(provider -> provider.min),
++                   Codec.FLOAT.fieldOf("max").forGetter(provider -> provider.max),
++                   Codec.FLOAT.fieldOf("plateau").forGetter(provider -> provider.plateau)
+                )
+                .apply(instance, TrapezoidFloat::new)
+-      )
+-      .validate(
+-         provider -> {
+-            if (provider.max < provider.min) {
+-               return DataResult.error(() -> "Max must be larger than min: [" + provider.min + ", " + provider.max + "]");
+-            } else {
+-               return provider.plateau > provider.max - provider.min
+-                  ? DataResult.error(() -> "Plateau can at most be the full span: [" + provider.min + ", " + provider.max + "]")
+-                  : DataResult.success(provider);
+-            }
+-         }
+-      );
++       )
++       .validate(
++           provider -> {
++              if (provider.max < provider.min) {
++                 return DataResult.error(() -> "Max must be larger than min: [" + provider.min + ", " + provider.max + "]");
++              } else {
++                 return provider.plateau > provider.max - provider.min
++                     ? DataResult.error(() -> "Plateau can at most be the full span: [" + provider.min + ", " + provider.max + "]")
++                     : DataResult.success(provider);
++              }
++           }
++       );
++   // Pencil end
+    private final float min;
+    private final float max;
+    private final float plateau;
+diff --git a/src/main/java/net/minecraft/util/valueproviders/UniformFloat.java b/src/main/java/net/minecraft/util/valueproviders/UniformFloat.java
+index 984b329..22dc9eb 100644
+--- a/src/main/java/net/minecraft/util/valueproviders/UniformFloat.java
++++ b/src/main/java/net/minecraft/util/valueproviders/UniformFloat.java
+@@ -8,18 +8,22 @@ import net.minecraft.util.Mth;
+ import net.minecraft.util.RandomSource;
+ 
+ public class UniformFloat extends FloatProvider {
+-   public static final MapCodec<UniformFloat> CODEC = RecordCodecBuilder.mapCodec(
+-         instance -> instance.group(
+-                  Codec.FLOAT.fieldOf("min_inclusive").forGetter(provider -> provider.minInclusive),
+-                  Codec.FLOAT.fieldOf("max_exclusive").forGetter(provider -> provider.maxExclusive)
++   // Pencil start - decompile fix
++   public static final MapCodec<UniformFloat> CODEC = RecordCodecBuilder.<UniformFloat>mapCodec(
++           instance -> instance.group(
++                   Codec.FLOAT.fieldOf("min_inclusive").forGetter(provider -> provider.minInclusive),
++                   Codec.FLOAT.fieldOf("max_exclusive").forGetter(provider -> provider.maxExclusive)
+                )
+                .apply(instance, UniformFloat::new)
+-      )
+-      .validate(
+-         provider -> provider.maxExclusive <= provider.minInclusive
+-               ? DataResult.error(() -> "Max must be larger than min, min_inclusive: " + provider.minInclusive + ", max_exclusive: " + provider.maxExclusive)
++       )
++       .validate(
++           provider -> provider.maxExclusive <= provider.minInclusive
++               ? DataResult.error(
++               () -> "Max must be larger than min, min_inclusive: " + provider.minInclusive + ", max_exclusive: " + provider.maxExclusive
++           )
+                : DataResult.success(provider)
+-      );
++       );
++   // Pencil end
+    private final float minInclusive;
+    private final float maxExclusive;
+ 
+diff --git a/src/main/java/net/minecraft/util/valueproviders/UniformInt.java b/src/main/java/net/minecraft/util/valueproviders/UniformInt.java
+index 6ed09c7..9e7256f 100644
+--- a/src/main/java/net/minecraft/util/valueproviders/UniformInt.java
++++ b/src/main/java/net/minecraft/util/valueproviders/UniformInt.java
+@@ -8,7 +8,7 @@ import net.minecraft.util.Mth;
+ import net.minecraft.util.RandomSource;
+ 
+ public class UniformInt extends IntProvider {
+-   public static final MapCodec<UniformInt> CODEC = RecordCodecBuilder.mapCodec(
++   public static final MapCodec<UniformInt> CODEC = RecordCodecBuilder.<UniformInt>mapCodec( // Pencil - decompile fix
+          instance -> instance.group(
+                   Codec.INT.fieldOf("min_inclusive").forGetter(provider -> provider.minInclusive),
+                   Codec.INT.fieldOf("max_inclusive").forGetter(provider -> provider.maxInclusive)
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 781025d..2becb4f 100644
+index 781025d..353dac3 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -479,7 +479,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
@@ -614,12 +1013,12 @@ index 781025d..2becb4f 100644
        this.firstTick = false;
        if (!this.level().isClientSide && this instanceof Leashable) {
 -         Leashable.tickLeash((Entity)((Leashable)this));
-+         Leashable.tickLeash((Entity & Leashable) this); // Pencil - decompile error
++         Leashable.tickLeash((Entity & Leashable) this); // Pencil - decompile fix
        }
  
        this.level().getProfiler().pop();
 diff --git a/src/main/java/net/minecraft/world/entity/Leashable.java b/src/main/java/net/minecraft/world/entity/Leashable.java
-index d80a1aa..11bcc97 100644
+index d80a1aa..b225010 100644
 --- a/src/main/java/net/minecraft/world/entity/Leashable.java
 +++ b/src/main/java/net/minecraft/world/entity/Leashable.java
 @@ -41,7 +41,7 @@ public interface Leashable {
@@ -627,7 +1026,7 @@ index d80a1aa..11bcc97 100644
     default void setDelayedLeashHolderId(int unresolvedLeashHolderId) {
        this.setLeashData(new Leashable.LeashData(unresolvedLeashHolderId));
 -      dropLeash((Entity)this, false, false);
-+      Leashable.dropLeash((Entity & Leashable) this, false, false); // Pencil - decompile error
++      Leashable.dropLeash((Entity & Leashable) this, false, false); // Pencil - decompile fix
     }
  
     @Nullable
@@ -636,7 +1035,7 @@ index d80a1aa..11bcc97 100644
  
     default void dropLeash(boolean sendPacket, boolean dropItem) {
 -      dropLeash((Entity)this, sendPacket, dropItem);
-+      Leashable.dropLeash((Entity & Leashable) this, sendPacket, dropItem); // Pencil - decompile error
++      Leashable.dropLeash((Entity & Leashable) this, sendPacket, dropItem); // Pencil - decompile fix
     }
  
     private static <E extends Entity & Leashable> void dropLeash(E entity, boolean sendPacket, boolean dropItem) {
@@ -645,7 +1044,7 @@ index d80a1aa..11bcc97 100644
  
     default void elasticRangeLeashBehaviour(Entity leashHolder, float distance) {
 -      legacyElasticRangeLeashBehaviour((Entity)this, leashHolder, distance);
-+      Leashable.legacyElasticRangeLeashBehaviour((Entity & Leashable) this, leashHolder, distance); // Pencil - decompile error
++      Leashable.legacyElasticRangeLeashBehaviour((Entity & Leashable) this, leashHolder, distance); // Pencil - decompile fix
     }
  
     private static <E extends Entity & Leashable> void legacyElasticRangeLeashBehaviour(E entity, Entity leashHolder, float distance) {
@@ -654,7 +1053,7 @@ index d80a1aa..11bcc97 100644
  
     default void setLeashedTo(Entity leashHolder, boolean sendPacket) {
 -      setLeashedTo((Entity)this, leashHolder, sendPacket);
-+      Leashable.setLeashedTo((Entity & Leashable) this, leashHolder, sendPacket); // Pencil - decompile error
++      Leashable.setLeashedTo((Entity & Leashable) this, leashHolder, sendPacket); // Pencil - decompile fix
     }
  
     private static <E extends Entity & Leashable> void setLeashedTo(E entity, Entity leashHolder, boolean sendPacket) {
@@ -663,12 +1062,100 @@ index d80a1aa..11bcc97 100644
     @Nullable
     default Entity getLeashHolder() {
 -      return getLeashHolder((Entity)this);
-+      return Leashable.getLeashHolder((Entity & Leashable) this); // Pencil - decompile error
++      return Leashable.getLeashHolder((Entity & Leashable) this); // Pencil - decompile fix
     }
  
     @Nullable
+diff --git a/src/main/java/net/minecraft/world/entity/ai/Brain.java b/src/main/java/net/minecraft/world/entity/ai/Brain.java
+index 8bceca8..6399ce0 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/Brain.java
++++ b/src/main/java/net/minecraft/world/entity/ai/Brain.java
+@@ -78,29 +78,30 @@ public class Brain<E extends LivingEntity> {
+                }
+ 
+                public <T> DataResult<Brain<E>> decode(DynamicOps<T> dynamicOps, MapLike<T> mapLike) {
+-                  MutableObject<DataResult<Builder<Brain.MemoryValue<?>>>> mutableObject = new MutableObject(DataResult.success(ImmutableList.builder()));
++               MutableObject<DataResult<ImmutableList.Builder<Brain.MemoryValue<?>>>> mutableObject2 = new MutableObject<>(DataResult.success(ImmutableList.builder())); // Pencil - decompile fix
+                   mapLike.entries()
+                      .forEach(
+                         pair -> {
+-                           DataResult<MemoryModuleType<?>> dataResult = BuiltInRegistries.MEMORY_MODULE_TYPE.byNameCodec().parse(dynamicOps, pair.getFirst());
++                           // Pencil start - decompile fix
++                          DataResult<MemoryModuleType<?>> dataResult = BuiltInRegistries.MEMORY_MODULE_TYPE
++                              .byNameCodec()
++                              .parse(dynamicOps, pair.getFirst());
++                           // Pencil end
+                            DataResult<? extends Brain.MemoryValue<?>> dataResult2 = dataResult.flatMap(
+-                              memoryType -> this.captureRead(memoryType, dynamicOps, (T)pair.getSecond())
++                              memoryType -> this.captureRead((MemoryModuleType<T>)memoryType, dynamicOps, (T)pair.getSecond()) // Pencil - decompile fix
+                            );
+-                           mutableObject.setValue(((DataResult)mutableObject.getValue()).apply2(Builder::add, dataResult2));
++                          mutableObject2.setValue(mutableObject2.getValue().apply2(ImmutableList.Builder::add, dataResult2)); // Pencil - decompile fix
+                         }
+                      );
+-                  ImmutableList<Brain.MemoryValue<?>> immutableList = ((DataResult)mutableObject.getValue())
+-                     .resultOrPartial(Brain.LOGGER::error)
+-                     .<ImmutableList<Brain.MemoryValue<?>>>map(Builder::build)
+-                     .orElseGet(ImmutableList::of);
++               ImmutableList<Brain.MemoryValue<?>> immutableList = mutableObject2.getValue().resultOrPartial(Brain.LOGGER::error).map(ImmutableList.Builder::build).orElseGet(ImmutableList::of); // Pencil - decompile fix
+                   return DataResult.success(new Brain<>(memoryModules, sensors, immutableList, mutableObject::getValue));
+                }
+ 
+                private <T, U> DataResult<Brain.MemoryValue<U>> captureRead(MemoryModuleType<U> memoryType, DynamicOps<T> ops, T value) {
+                   return memoryType.getCodec()
+-                     .<DataResult>map(DataResult::success)
++                      .map(DataResult::success) // Pencil - decompile fix
+                      .orElseGet(() -> DataResult.error(() -> "No codec for memory: " + memoryType))
+-                     .flatMap(codec -> codec.parse(ops, value))
++                      .<ExpirableValue<U>>flatMap(codec -> codec.parse(ops, value)) // Pencil - decompile fix
+                      .map(data -> new Brain.MemoryValue<>(memoryType, Optional.of(data)));
+                }
+ 
+@@ -192,14 +193,14 @@ public class Brain<E extends LivingEntity> {
+       if (optional == null) {
+          throw new IllegalStateException("Unregistered memory fetched: " + type);
+       } else {
+-         return optional.map(ExpirableValue::getValue);
++         return (Optional<U>)optional.map(ExpirableValue::getValue); // Pencil - decompile fix
+       }
+    }
+ 
+    @Nullable
+    public <U> Optional<U> getMemoryInternal(MemoryModuleType<U> type) {
+       Optional<? extends ExpirableValue<?>> optional = this.memories.get(type);
+-      return optional == null ? null : optional.map(ExpirableValue::getValue);
++      return optional == null ? null : (Optional<U>)optional.map(ExpirableValue::getValue); // Pencil - decompile fix
+    }
+ 
+    public <U> long getTimeUntilExpiry(MemoryModuleType<U> type) {
+diff --git a/src/main/java/net/minecraft/world/entity/ai/gossip/GossipContainer.java b/src/main/java/net/minecraft/world/entity/ai/gossip/GossipContainer.java
+index c8cf370..5c16de7 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/gossip/GossipContainer.java
++++ b/src/main/java/net/minecraft/world/entity/ai/gossip/GossipContainer.java
+@@ -155,7 +155,7 @@ public class GossipContainer {
+          .decode(dynamic)
+          .resultOrPartial(error -> LOGGER.warn("Failed to deserialize gossips: {}", error))
+          .stream()
+-         .flatMap(pair -> ((List)pair.getFirst()).stream())
++          .flatMap(pair -> pair.getFirst().stream()) // Pencil - decompile fix
+          .forEach(entry -> this.getOrCreate(entry.target).entries.put(entry.type, entry.value));
+    }
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/ai/sensing/VillagerHostilesSensor.java b/src/main/java/net/minecraft/world/entity/ai/sensing/VillagerHostilesSensor.java
+index b38af54..468eb9e 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/sensing/VillagerHostilesSensor.java
++++ b/src/main/java/net/minecraft/world/entity/ai/sensing/VillagerHostilesSensor.java
+@@ -6,7 +6,7 @@ import net.minecraft.world.entity.LivingEntity;
+ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+ 
+ public class VillagerHostilesSensor extends NearestVisibleLivingEntitySensor {
+-   private static final ImmutableMap<EntityType<?>, Float> ACCEPTABLE_DISTANCE_FROM_HOSTILES = ImmutableMap.builder()
++   private static final ImmutableMap<EntityType<?>, Float> ACCEPTABLE_DISTANCE_FROM_HOSTILES = ImmutableMap.<EntityType<?>, Float>builder() // Pencil - decompile fix
+       .put(EntityType.DROWNED, 8.0F)
+       .put(EntityType.EVOKER, 12.0F)
+       .put(EntityType.HUSK, 8.0F)
 diff --git a/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiManager.java b/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiManager.java
-index 7eb27cc..11d9d9f 100644
+index 7eb27cc..4a11137 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiManager.java
 +++ b/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiManager.java
 @@ -256,7 +256,7 @@ public class PoiManager extends SectionStorage<PoiSection> {
@@ -676,19 +1163,19 @@ index 7eb27cc..11d9d9f 100644
        SectionPos.aroundChunk(new ChunkPos(pos), Math.floorDiv(radius, 16), this.levelHeightAccessor.getMinSection(), this.levelHeightAccessor.getMaxSection())
           .map(sectionPos -> Pair.of(sectionPos, this.getOrLoad(sectionPos.asLong())))
 -         .filter(pair -> !((Optional)pair.getSecond()).map(PoiSection::isValid).orElse(false))
-+          .filter(pair -> !pair.getSecond().map(PoiSection::isValid).orElse(false)) // Pencil - decompile error
++          .filter(pair -> !pair.getSecond().map(PoiSection::isValid).orElse(false)) // Pencil - decompile fix
           .map(pair -> ((SectionPos)pair.getFirst()).chunk())
           .filter(chunkPos -> this.loadedChunks.add(chunkPos.toLong()))
           .forEach(chunkPos -> world.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.EMPTY));
 diff --git a/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiSection.java b/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiSection.java
-index 5423be9..f6ca180 100644
+index 5423be9..8c32869 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiSection.java
 +++ b/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiSection.java
 @@ -30,17 +30,19 @@ public class PoiSection {
     private final Runnable setDirty;
     private boolean isValid;
  
-+   // Pencil start - decompile error
++   // Pencil start - decompile fix
     public static Codec<PoiSection> codec(Runnable updateListener) {
 -      return RecordCodecBuilder.create(
 -            instance -> instance.group(
@@ -712,7 +1199,7 @@ index 5423be9..f6ca180 100644
     public PoiSection(Runnable updateListener) {
        this(updateListener, true, ImmutableList.of());
 diff --git a/src/main/java/net/minecraft/world/entity/animal/Sheep.java b/src/main/java/net/minecraft/world/entity/animal/Sheep.java
-index 16b8e1d..e62473a 100644
+index 16b8e1d..5c9df12 100644
 --- a/src/main/java/net/minecraft/world/entity/animal/Sheep.java
 +++ b/src/main/java/net/minecraft/world/entity/animal/Sheep.java
 @@ -80,9 +80,11 @@ public class Sheep extends Animal implements Shearable {
@@ -722,7 +1209,7 @@ index 16b8e1d..e62473a 100644
 -   private static final Map<DyeColor, Integer> COLOR_BY_DYE = Maps.newEnumMap(
 -      Arrays.stream(DyeColor.values()).collect(Collectors.toMap(color -> (DyeColor)color, Sheep::createSheepColor))
 -   );
-+   // Pencil start - decompile error
++   // Pencil start - decompile fix
 +   private static final Map<DyeColor, Integer> COLOR_BY_DYE = Maps.newEnumMap((Map) Arrays.stream(DyeColor.values()).collect(Collectors.toMap((enumcolor) -> {
 +      return enumcolor;
 +   }, Sheep::createSheepColor)));
@@ -731,7 +1218,7 @@ index 16b8e1d..e62473a 100644
     private EatBlockGoal eatBlockGoal;
  
 diff --git a/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java b/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java
-index 4524bc2..49090b3 100644
+index 4524bc2..15757fc 100644
 --- a/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java
 +++ b/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java
 @@ -71,30 +71,29 @@ public class Axolotl extends Animal implements LerpingModel, VariantHolder<Axolo
@@ -762,7 +1249,7 @@ index 4524bc2..49090b3 100644
 -         MemoryModuleType.IS_PANICKING
 -      }
 -   );
-+   // Pencil start - decompile error
++   // Pencil start - decompile fix
 +   public static final ImmutableList<? extends MemoryModuleType<?>> MEMORY_TYPES = ImmutableList.<MemoryModuleType<?>>of(MemoryModuleType.BREED_TARGET,
 +       MemoryModuleType.NEAREST_LIVING_ENTITIES,
 +       MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES,
@@ -789,7 +1276,7 @@ index 4524bc2..49090b3 100644
     private static final EntityDataAccessor<Boolean> DATA_PLAYING_DEAD = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> FROM_BUCKET = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.BOOLEAN);
 diff --git a/src/main/java/net/minecraft/world/entity/monster/Zoglin.java b/src/main/java/net/minecraft/world/entity/monster/Zoglin.java
-index bb5b311..addae1c 100644
+index bb5b311..e754c25 100644
 --- a/src/main/java/net/minecraft/world/entity/monster/Zoglin.java
 +++ b/src/main/java/net/minecraft/world/entity/monster/Zoglin.java
 @@ -107,7 +107,7 @@ public class Zoglin extends Monster implements Enemy, HoglinBase {
@@ -797,12 +1284,12 @@ index bb5b311..addae1c 100644
              StartAttacking.create(Zoglin::findNearestValidAttackTarget),
              SetEntityLookTargetSometimes.create(8.0F, UniformInt.of(30, 60)),
 -            new RunOne(
-+            new RunOne<>( // Pencil - decompile error
++            new RunOne<>( // Pencil - decompile fix
                 ImmutableList.of(
                    Pair.of(RandomStroll.stroll(0.4F), 2), Pair.of(SetWalkTargetFromLookTarget.create(0.4F, 3), 2), Pair.of(new DoNothing(30, 60), 1)
                 )
 diff --git a/src/main/java/net/minecraft/world/entity/monster/hoglin/Hoglin.java b/src/main/java/net/minecraft/world/entity/monster/hoglin/Hoglin.java
-index c70d179..4e35d35 100644
+index c70d179..cb44caf 100644
 --- a/src/main/java/net/minecraft/world/entity/monster/hoglin/Hoglin.java
 +++ b/src/main/java/net/minecraft/world/entity/monster/hoglin/Hoglin.java
 @@ -75,7 +75,7 @@ public class Hoglin extends Animal implements Enemy, HoglinBase {
@@ -810,7 +1297,7 @@ index c70d179..4e35d35 100644
        MemoryModuleType.ATTACK_COOLING_DOWN,
        MemoryModuleType.NEAREST_VISIBLE_ADULT_PIGLIN,
 -      new MemoryModuleType[]{
-+         // Pencil - decompile error
++         // Pencil - decompile fix
           MemoryModuleType.AVOID_TARGET,
           MemoryModuleType.VISIBLE_ADULT_PIGLIN_COUNT,
           MemoryModuleType.VISIBLE_ADULT_HOGLIN_COUNT,
@@ -819,10 +1306,28 @@ index c70d179..4e35d35 100644
           MemoryModuleType.PACIFIED,
           MemoryModuleType.IS_PANICKING
 -      }
-+       // Pencil - decompile error
++       // Pencil - decompile fix
     );
  
     public Hoglin(EntityType<? extends Hoglin> type, Level world) {
+diff --git a/src/main/java/net/minecraft/world/entity/monster/warden/AngerManagement.java b/src/main/java/net/minecraft/world/entity/monster/warden/AngerManagement.java
+index b266c5b..02b2036 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/warden/AngerManagement.java
++++ b/src/main/java/net/minecraft/world/entity/monster/warden/AngerManagement.java
+@@ -70,11 +70,9 @@ public class AngerManagement {
+    }
+ 
+    private List<Pair<UUID, Integer>> createUuidAngerPairs() {
+-      return Streams.concat(
+-            new Stream[]{
++      return Streams.<Pair<UUID, Integer>>concat( // Pencil - decompile fix
+                this.suspects.stream().map(suspect -> Pair.of(suspect.getUUID(), this.angerBySuspect.getInt(suspect))),
+-               this.angerByUuid.object2IntEntrySet().stream().map(suspect -> Pair.of((UUID)suspect.getKey(), suspect.getIntValue()))
+-            }
++              this.angerByUuid.object2IntEntrySet().stream().map(suspect -> Pair.of(suspect.getKey(), suspect.getIntValue())) // Pencil - decompile fix
+          )
+          .collect(Collectors.toList());
+    }
 diff --git a/src/main/java/net/minecraft/world/entity/npc/Villager.java b/src/main/java/net/minecraft/world/entity/npc/Villager.java
 index 8900a36..b3a59ab 100644
 --- a/src/main/java/net/minecraft/world/entity/npc/Villager.java
@@ -855,8 +1360,102 @@ index 8900a36..b3a59ab 100644
  
     public Villager(EntityType<? extends Villager> entityType, Level world) {
        this(entityType, world, VillagerType.PLAINS);
+diff --git a/src/main/java/net/minecraft/world/entity/npc/VillagerTrades.java b/src/main/java/net/minecraft/world/entity/npc/VillagerTrades.java
+index 5178a74..627ba16 100644
+--- a/src/main/java/net/minecraft/world/entity/npc/VillagerTrades.java
++++ b/src/main/java/net/minecraft/world/entity/npc/VillagerTrades.java
+@@ -150,7 +150,7 @@ public class VillagerTrades {
+                         1,
+                         12,
+                         30,
+-                        ImmutableMap.builder()
++                        ImmutableMap.<VillagerType, Item>builder() // Pencil - decompile fix
+                            .put(VillagerType.PLAINS, Items.OAK_BOAT)
+                            .put(VillagerType.TAIGA, Items.SPRUCE_BOAT)
+                            .put(VillagerType.SNOW, Items.SPRUCE_BOAT)
+@@ -304,7 +304,7 @@ public class VillagerTrades {
+          map.put(
+             VillagerProfession.LIBRARIAN,
+             toIntMap(
+-               ImmutableMap.builder()
++               ImmutableMap.<Integer, VillagerTrades.ItemListing[]>builder() // Pencil - decompile fix
+                   .put(
+                      1,
+                      new VillagerTrades.ItemListing[]{
+@@ -758,7 +758,7 @@ public class VillagerTrades {
+    public static final Map<VillagerProfession, Int2ObjectMap<VillagerTrades.ItemListing[]>> EXPERIMENTAL_TRADES = Map.of(
+       VillagerProfession.LIBRARIAN,
+       toIntMap(
+-         ImmutableMap.builder()
++         ImmutableMap.<Integer, VillagerTrades.ItemListing[]>builder() // Pencil - decompile fix
+             .put(
+                1,
+                new VillagerTrades.ItemListing[]{
+@@ -792,7 +792,7 @@ public class VillagerTrades {
+       ),
+       VillagerProfession.ARMORER,
+       toIntMap(
+-         ImmutableMap.builder()
++         ImmutableMap.<Integer, VillagerTrades.ItemListing[]>builder() // Pencil - decompile fix
+             .put(
+                1,
+                new VillagerTrades.ItemListing[]{
+@@ -1109,7 +1109,7 @@ public class VillagerTrades {
+             new VillagerTrades.ItemListing[]{
+                new VillagerTrades.EmeraldForItems(Items.GLASS_PANE, 11, 16, 10),
+                new VillagerTrades.TypeSpecificTrade(
+-                  ImmutableMap.builder()
++                  ImmutableMap.<VillagerType, VillagerTrades.ItemListing>builder()
+                      .put(VillagerType.DESERT, SAVANNA_MAP)
+                      .put(VillagerType.SAVANNA, PLAINS_MAP)
+                      .put(VillagerType.PLAINS, TAIGA_MAP)
+@@ -1120,7 +1120,7 @@ public class VillagerTrades {
+                      .build()
+                ),
+                new VillagerTrades.TypeSpecificTrade(
+-                  ImmutableMap.builder()
++                  ImmutableMap.<VillagerType, VillagerTrades.ItemListing>builder()
+                      .put(VillagerType.DESERT, PLAINS_MAP)
+                      .put(VillagerType.SAVANNA, DESERT_MAP)
+                      .put(VillagerType.PLAINS, SAVANNA_MAP)
+@@ -1131,7 +1131,7 @@ public class VillagerTrades {
+                      .build()
+                ),
+                new VillagerTrades.TypeSpecificTrade(
+-                  ImmutableMap.builder()
++                  ImmutableMap.<VillagerType, VillagerTrades.ItemListing>builder()
+                      .put(VillagerType.DESERT, JUNGLE_MAP)
+                      .put(VillagerType.SAVANNA, JUNGLE_MAP)
+                      .put(VillagerType.PLAINS, new VillagerTrades.FailureItemListing())
+@@ -1182,7 +1182,7 @@ public class VillagerTrades {
+          )
+       )
+    );
+-   public static final List<Pair<VillagerTrades.ItemListing[], Integer>> EXPERIMENTAL_WANDERING_TRADER_TRADES = ImmutableList.builder()
++   public static final List<Pair<VillagerTrades.ItemListing[], Integer>> EXPERIMENTAL_WANDERING_TRADER_TRADES = ImmutableList.<Pair<VillagerTrades.ItemListing[], Integer>>builder() // Pencil - decompile fix
+       .add(
+          Pair.of(
+             new VillagerTrades.ItemListing[]{
+@@ -1293,7 +1293,7 @@ public class VillagerTrades {
+ 
+    private static VillagerTrades.ItemListing commonBooks(int experience) {
+       return new VillagerTrades.TypeSpecificTrade(
+-         ImmutableMap.builder()
++         ImmutableMap.<VillagerType, VillagerTrades.ItemListing>builder() // Pencil - decompile fix
+             .put(VillagerType.DESERT, new VillagerTrades.EnchantBookForEmeralds(experience, EnchantmentTags.TRADES_DESERT_COMMON))
+             .put(VillagerType.JUNGLE, new VillagerTrades.EnchantBookForEmeralds(experience, EnchantmentTags.TRADES_JUNGLE_COMMON))
+             .put(VillagerType.PLAINS, new VillagerTrades.EnchantBookForEmeralds(experience, EnchantmentTags.TRADES_PLAINS_COMMON))
+@@ -1307,7 +1307,7 @@ public class VillagerTrades {
+ 
+    private static VillagerTrades.ItemListing specialBooks() {
+       return new VillagerTrades.TypeSpecificTrade(
+-         ImmutableMap.builder()
++         ImmutableMap.<VillagerType, VillagerTrades.ItemListing>builder() // Pencil - decompile fix
+             .put(VillagerType.DESERT, new VillagerTrades.EnchantBookForEmeralds(30, 3, 3, EnchantmentTags.TRADES_DESERT_SPECIAL))
+             .put(VillagerType.JUNGLE, new VillagerTrades.EnchantBookForEmeralds(30, 2, 2, EnchantmentTags.TRADES_JUNGLE_SPECIAL))
+             .put(VillagerType.PLAINS, new VillagerTrades.EnchantBookForEmeralds(30, 3, 3, EnchantmentTags.TRADES_PLAINS_SPECIAL))
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 5db9a44..0081156 100644
+index 5db9a44..22c7f07 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -133,20 +133,42 @@ public abstract class Player extends LivingEntity {
@@ -877,7 +1476,7 @@ index 5db9a44..0081156 100644
 -      )
 -      .put(Pose.DYING, EntityDimensions.fixed(0.2F, 0.2F).withEyeHeight(1.62F))
 -      .build();
-+   // Pencil start - decompile error
++   // Pencil start - decompile fix
 +   private static final Map<Pose, EntityDimensions> POSES = ImmutableMap.<Pose, EntityDimensions>builder().put(
 +       Pose.STANDING,
 +       Player.STANDING_DIMENSIONS
@@ -917,7 +1516,7 @@ index 5db9a44..0081156 100644
     private static final EntityDataAccessor<Integer> DATA_SCORE_ID = SynchedEntityData.defineId(Player.class, EntityDataSerializers.INT);
     protected static final EntityDataAccessor<Byte> DATA_PLAYER_MODE_CUSTOMISATION = SynchedEntityData.defineId(Player.class, EntityDataSerializers.BYTE);
 diff --git a/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java b/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
-index b0c7dbb..1dc7171 100644
+index b0c7dbb..6efef19 100644
 --- a/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
 +++ b/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
 @@ -558,12 +558,37 @@ public abstract class AbstractArrow extends Projectile {
@@ -932,10 +1531,10 @@ index b0c7dbb..1dc7171 100644
 -         case Player player when this.pickup == AbstractArrow.Pickup.DISALLOWED -> AbstractArrow.Pickup.ALLOWED;
 -         case OminousItemSpawner ominousItemSpawner -> AbstractArrow.Pickup.DISALLOWED;
 -      };
-+      AbstractArrow.Pickup entityarrow_pickupstatus = this.pickup; // Pencil - decompile error
++      AbstractArrow.Pickup entityarrow_pickupstatus = this.pickup; // Pencil - decompile fix
 +
 +      label16:
-+      // Pencil start - decompile error
++      // Pencil start - decompile fix
 +      while (true) {
 +         switch (entity1) {
 +            case Player entityhuman:
@@ -964,7 +1563,7 @@ index b0c7dbb..1dc7171 100644
  
     @Override
 diff --git a/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java b/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java
-index ea6ef92..67a5541 100644
+index ea6ef92..92492dd 100644
 --- a/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java
 +++ b/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java
 @@ -110,7 +110,7 @@ public class RecipeManager extends SimpleJsonResourceReloadListener {
@@ -972,12 +1571,38 @@ index ea6ef92..67a5541 100644
  
     private <I extends RecipeInput, T extends Recipe<I>> Collection<RecipeHolder<T>> byType(RecipeType<T> type) {
 -      return this.byType.get(type);
-+      return (Collection) this.byType.get(type); // Pencil - decompile error
++      return (Collection) this.byType.get(type); // Pencil - decompile fix
     }
  
     public <I extends RecipeInput, T extends Recipe<I>> NonNullList<ItemStack> getRemainingItemsFor(RecipeType<T> type, I input, Level world) {
+diff --git a/src/main/java/net/minecraft/world/item/enchantment/ConditionalEffect.java b/src/main/java/net/minecraft/world/item/enchantment/ConditionalEffect.java
+index 5a45f02..2ee5244 100644
+--- a/src/main/java/net/minecraft/world/item/enchantment/ConditionalEffect.java
++++ b/src/main/java/net/minecraft/world/item/enchantment/ConditionalEffect.java
+@@ -19,7 +19,7 @@ public record ConditionalEffect<T>(T effect, Optional<LootItemCondition> require
+                ValidationContext validationContext = new ValidationContext(collector, lootContextType);
+                condition.validate(validationContext);
+                return collector.getReport()
+-                  .map(errors -> DataResult.error(() -> "Validation error in enchantment effect condition: " + errors))
++                   .map(string -> DataResult.<LootItemCondition>error(() -> "Validation error in enchantment effect condition: " + string)) // Pencil - decompile fix
+                   .orElseGet(() -> DataResult.success(condition));
+             }
+          );
+diff --git a/src/main/java/net/minecraft/world/item/enchantment/LevelBasedValue.java b/src/main/java/net/minecraft/world/item/enchantment/LevelBasedValue.java
+index f07ecb4..14cbbb4 100644
+--- a/src/main/java/net/minecraft/world/item/enchantment/LevelBasedValue.java
++++ b/src/main/java/net/minecraft/world/item/enchantment/LevelBasedValue.java
+@@ -47,7 +47,7 @@ public interface LevelBasedValue {
+    MapCodec<? extends LevelBasedValue> codec();
+ 
+    public static record Clamped(LevelBasedValue value, float min, float max) implements LevelBasedValue {
+-      public static final MapCodec<LevelBasedValue.Clamped> CODEC = RecordCodecBuilder.mapCodec(
++      public static final MapCodec<LevelBasedValue.Clamped> CODEC = RecordCodecBuilder.<LevelBasedValue.Clamped>mapCodec( // Pencil - decompile fix
+             instance -> instance.group(
+                      LevelBasedValue.CODEC.fieldOf("value").forGetter(LevelBasedValue.Clamped::value),
+                      Codec.FLOAT.fieldOf("min").forGetter(LevelBasedValue.Clamped::min),
 diff --git a/src/main/java/net/minecraft/world/level/GameRules.java b/src/main/java/net/minecraft/world/level/GameRules.java
-index 0cfdd7c..477397c 100644
+index 0cfdd7c..5df4828 100644
 --- a/src/main/java/net/minecraft/world/level/GameRules.java
 +++ b/src/main/java/net/minecraft/world/level/GameRules.java
 @@ -252,8 +252,8 @@ public class GameRules {
@@ -986,13 +1611,13 @@ index 0cfdd7c..477397c 100644
     private static <T extends GameRules.Value<T>> void callVisitorCap(GameRules.GameRuleTypeVisitor consumer, GameRules.Key<?> key, GameRules.Type<?> type) {
 -      consumer.visit(key, type);
 -      type.callVisitor(consumer, key);
-+      consumer.visit((GameRules.Key<T>) key, (GameRules.Type<T>) type); // Pencil - decompile error
-+      ((GameRules.Type<T>) type).callVisitor(consumer, (GameRules.Key<T>) key); // Pencil - decompile error
++      consumer.visit((GameRules.Key<T>) key, (GameRules.Type<T>) type); // Pencil - decompile fix
++      ((GameRules.Type<T>) type).callVisitor(consumer, (GameRules.Key<T>) key); // Pencil - decompile fix
     }
  
     public void assignFrom(GameRules rules, @Nullable MinecraftServer server) {
 diff --git a/src/main/java/net/minecraft/world/level/biome/Climate.java b/src/main/java/net/minecraft/world/level/biome/Climate.java
-index dc368f3..2586170 100644
+index dc368f3..815fc27 100644
 --- a/src/main/java/net/minecraft/world/level/biome/Climate.java
 +++ b/src/main/java/net/minecraft/world/level/biome/Climate.java
 @@ -149,7 +149,7 @@ public class Climate {
@@ -1000,12 +1625,12 @@ index dc368f3..2586170 100644
        public static <T> Codec<Climate.ParameterList<T>> codec(MapCodec<T> entryCodec) {
           return ExtraCodecs.nonEmptyList(
 -               RecordCodecBuilder.create(
-+                 RecordCodecBuilder.<Pair<Climate.ParameterPoint, T>>create( // Pencil - decompile error
++                 RecordCodecBuilder.<Pair<Climate.ParameterPoint, T>>create( // Pencil - decompile fix
                       instance -> instance.group(
                                Climate.ParameterPoint.CODEC.fieldOf("parameters").forGetter(Pair::getFirst), entryCodec.forGetter(Pair::getSecond)
                             )
 diff --git a/src/main/java/net/minecraft/world/level/biome/MobSpawnSettings.java b/src/main/java/net/minecraft/world/level/biome/MobSpawnSettings.java
-index 5224ec1..29b7314 100644
+index 5224ec1..ab1c72c 100644
 --- a/src/main/java/net/minecraft/world/level/biome/MobSpawnSettings.java
 +++ b/src/main/java/net/minecraft/world/level/biome/MobSpawnSettings.java
 @@ -115,7 +115,7 @@ public class MobSpawnSettings {
@@ -1013,12 +1638,12 @@ index 5224ec1..29b7314 100644
  
     public static class SpawnerData extends WeightedEntry.IntrusiveBase {
 -      public static final Codec<MobSpawnSettings.SpawnerData> CODEC = RecordCodecBuilder.create(
-+      public static final Codec<MobSpawnSettings.SpawnerData> CODEC = RecordCodecBuilder.<MobSpawnSettings.SpawnerData>create( // Pencil - decompile error
++      public static final Codec<MobSpawnSettings.SpawnerData> CODEC = RecordCodecBuilder.<MobSpawnSettings.SpawnerData>create( // Pencil - decompile fix
              instance -> instance.group(
                       BuiltInRegistries.ENTITY_TYPE.byNameCodec().fieldOf("type").forGetter(spawnEntry -> spawnEntry.type),
                       Weight.CODEC.fieldOf("weight").forGetter(WeightedEntry.IntrusiveBase::getWeight),
 diff --git a/src/main/java/net/minecraft/world/level/block/SculkSpreader.java b/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
-index 0322b11..0a8519e 100644
+index 0322b11..b37f963 100644
 --- a/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
 +++ b/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
 @@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
@@ -1054,7 +1679,7 @@ index 0322b11..0a8519e 100644
 -            .parse(new Dynamic(NbtOps.INSTANCE, nbt.getList("cursors", 10)))
 -            .resultOrPartial(LOGGER::error)
 -            .orElseGet(ArrayList::new);
-+         // Pencil start - decompile error
++         // Pencil start - decompile fix
 +         DataResult<List<ChargeCursor>> dataresult = SculkSpreader.ChargeCursor.CODEC.listOf().parse(new Dynamic<>(NbtOps.INSTANCE, nbt.getList("cursors", 10)));
 +         Logger logger = SculkSpreader.LOGGER;
 +
@@ -1072,7 +1697,7 @@ index 0322b11..0a8519e 100644
     }
  
 diff --git a/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java
-index e5a4fe8..e883244 100644
+index e5a4fe8..4e8b65c 100644
 --- a/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java
 +++ b/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java
 @@ -90,7 +90,7 @@ public class SkullBlockEntity extends BlockEntity {
@@ -1080,12 +1705,12 @@ index e5a4fe8..e883244 100644
                 LoadingCache<UUID, CompletableFuture<Optional<GameProfile>>> loadingCache = profileCacheById;
                 return loadingCache != null && !optional.isEmpty()
 -                  ? ((CompletableFuture)loadingCache.getUnchecked(optional.get().getId())).thenApply(optional2 -> optional2.or(() -> optional))
-+                  ? (loadingCache.getUnchecked(optional.get().getId())).thenApply(optional2 -> optional2.or(() -> optional)) // Pencil - decompile error
++                  ? (loadingCache.getUnchecked(optional.get().getId())).thenApply(optional2 -> optional2.or(() -> optional)) // Pencil - decompile fix
                    : CompletableFuture.completedFuture(Optional.empty());
              }
           );
 diff --git a/src/main/java/net/minecraft/world/level/block/entity/vault/VaultConfig.java b/src/main/java/net/minecraft/world/level/block/entity/vault/VaultConfig.java
-index cf472f0..9fa11ae 100644
+index cf472f0..e118117 100644
 --- a/src/main/java/net/minecraft/world/level/block/entity/vault/VaultConfig.java
 +++ b/src/main/java/net/minecraft/world/level/block/entity/vault/VaultConfig.java
 @@ -23,19 +23,25 @@ public record VaultConfig(
@@ -1101,7 +1726,7 @@ index cf472f0..9fa11ae 100644
 -                  ResourceKey.codec(Registries.LOOT_TABLE)
 -                     .lenientOptionalFieldOf("override_loot_table_to_display")
 -                     .forGetter(VaultConfig::overrideLootTableToDisplay)
-+   // Pencil start - decompile error
++   // Pencil start - decompile fix
 +   static Codec<VaultConfig> CODEC = RecordCodecBuilder.<VaultConfig>create(
 +           instance -> instance.group(
 +                   ResourceKey.codec(Registries.LOOT_TABLE).lenientOptionalFieldOf("loot_table", DEFAULT.lootTable()).forGetter(VaultConfig::lootTable),
@@ -1125,8 +1750,67 @@ index cf472f0..9fa11ae 100644
  
     private VaultConfig() {
        this(
+diff --git a/src/main/java/net/minecraft/world/level/block/state/StateDefinition.java b/src/main/java/net/minecraft/world/level/block/state/StateDefinition.java
+index 73bfc42..c39a83b 100644
+--- a/src/main/java/net/minecraft/world/level/block/state/StateDefinition.java
++++ b/src/main/java/net/minecraft/world/level/block/state/StateDefinition.java
+@@ -36,21 +36,17 @@ public class StateDefinition<O, S extends StateHolder<O, S>> {
+       this.propertiesByName = ImmutableSortedMap.copyOf(propertiesMap);
+       Supplier<S> supplier = () -> defaultStateGetter.apply(owner);
+       MapCodec<S> mapCodec = MapCodec.of(Encoder.empty(), Decoder.unit(supplier));
+-      UnmodifiableIterator mapCodec2 = this.propertiesByName.entrySet().iterator();
+ 
+-      while (mapCodec2.hasNext()) {
+-         Entry<String, Property<?>> entry = (Entry<String, Property<?>>)mapCodec2.next();
++      for (Entry<String, Property<?>> entry : this.propertiesByName.entrySet()) { // Pencil - decompile fix
+          mapCodec = appendPropertyCodec(mapCodec, supplier, entry.getKey(), entry.getValue());
+       }
+ 
+-      MapCodec<S> mapCodec2x = mapCodec;
++      MapCodec<S> mapCodec2 = mapCodec; // Pencil - decompile fix
+       Map<Map<Property<?>, Comparable<?>>, S> map = Maps.newLinkedHashMap();
+       List<S> list = Lists.newArrayList();
+       Stream<List<Pair<Property<?>, Comparable<?>>>> stream = Stream.of(Collections.emptyList());
+-      UnmodifiableIterator var11 = this.propertiesByName.values().iterator();
+ 
+-      while (var11.hasNext()) {
+-         Property<?> property = (Property<?>)var11.next();
++      for (Property<?> property : this.propertiesByName.values()) { // Pencil - decompile fix
+          stream = stream.flatMap(listx -> property.getPossibleValues().stream().map(comparable -> {
+                List<Pair<Property<?>, Comparable<?>>> list2 = Lists.newArrayList(listx);
+                list2.add(Pair.of(property, comparable));
+@@ -59,10 +55,10 @@ public class StateDefinition<O, S extends StateHolder<O, S>> {
+       }
+ 
+       stream.forEach(list2 -> {
+-         Reference2ObjectArrayMap<Property<?>, Comparable<?>> reference2ObjectArrayMap = new Reference2ObjectArrayMap(list2.size());
++         Reference2ObjectArrayMap<Property<?>, Comparable<?>> reference2ObjectArrayMap = new Reference2ObjectArrayMap<>(list2.size()); // Pencil - decompile fix
+ 
+          for (Pair<Property<?>, Comparable<?>> pair : list2) {
+-            reference2ObjectArrayMap.put((Property)pair.getFirst(), (Comparable)pair.getSecond());
++            reference2ObjectArrayMap.put(pair.getFirst(), pair.getSecond()); // Pencil - decompile fix
+          }
+ 
+          S stateHolderx = factory.create(owner, reference2ObjectArrayMap, mapCodec2);
+@@ -80,12 +76,11 @@ public class StateDefinition<O, S extends StateHolder<O, S>> {
+    private static <S extends StateHolder<?, S>, T extends Comparable<T>> MapCodec<S> appendPropertyCodec(
+       MapCodec<S> mapCodec, Supplier<S> defaultStateGetter, String key, Property<T> property
+    ) {
++      // Pencil start - decompile fix
+       return Codec.mapPair(mapCodec, property.valueCodec().fieldOf(key).orElseGet(string -> {
+-         }, () -> property.value(defaultStateGetter.get())))
+-         .xmap(
+-            pair -> (StateHolder)((StateHolder)pair.getFirst()).setValue(property, ((Property.Value)pair.getSecond()).value()),
+-            stateHolder -> Pair.of(stateHolder, property.value(stateHolder))
+-         );
++          }, () -> property.value(defaultStateGetter.get())))
++          .xmap(pair -> pair.getFirst().setValue(property, pair.getSecond().value()), stateHolder -> Pair.of((S)stateHolder, property.value(stateHolder)));
++      // Pencil end
+    }
+ 
+    public ImmutableList<S> getPossibleStates() {
 diff --git a/src/main/java/net/minecraft/world/level/block/state/properties/Property.java b/src/main/java/net/minecraft/world/level/block/state/properties/Property.java
-index df9c2ac..4fdbe6b 100644
+index df9c2ac..afe5c9c 100644
 --- a/src/main/java/net/minecraft/world/level/block/state/properties/Property.java
 +++ b/src/main/java/net/minecraft/world/level/block/state/properties/Property.java
 @@ -16,12 +16,14 @@ public abstract class Property<T extends Comparable<T>> {
@@ -1136,7 +1820,7 @@ index df9c2ac..4fdbe6b 100644
 -      .comapFlatMap(
 -         value -> this.getValue(value)
 -               .<DataResult>map(DataResult::success)
-+   // Pencil start - decompile error
++   // Pencil start - decompile fix
 +       .comapFlatMap(
 +           value -> this.getValue(value)
 +               .map(DataResult::success)
@@ -1145,12 +1829,38 @@ index df9c2ac..4fdbe6b 100644
 -      );
 +           this::getName
 +       );
-+   // Pencil end - decompile error
++   // Pencil end - decompile fix
     private final Codec<Property.Value<T>> valueCodec = this.codec.xmap(this::value, Property.Value::value);
  
     protected Property(String name, Class<T> type) {
+diff --git a/src/main/java/net/minecraft/world/level/chunk/PalettedContainer.java b/src/main/java/net/minecraft/world/level/chunk/PalettedContainer.java
+index 3d56541..078340f 100644
+--- a/src/main/java/net/minecraft/world/level/chunk/PalettedContainer.java
++++ b/src/main/java/net/minecraft/world/level/chunk/PalettedContainer.java
+@@ -56,7 +56,7 @@ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainer
+    private static <T, C extends PalettedContainerRO<T>> Codec<C> codec(
+       IdMap<T> idList, Codec<T> entryCodec, PalettedContainer.Strategy provider, T defaultValue, PalettedContainerRO.Unpacker<T, C> reader
+    ) {
+-      return RecordCodecBuilder.create(
++      return RecordCodecBuilder.<PalettedContainerRO.PackedData>create( // Pencil - decompile fix
+             instance -> instance.group(
+                      entryCodec.mapResult(ExtraCodecs.orElsePartial(defaultValue))
+                         .listOf()
+@@ -66,7 +66,11 @@ public class PalettedContainer<T> implements PaletteResize<T>, PalettedContainer
+                   )
+                   .apply(instance, PalettedContainerRO.PackedData::new)
+          )
+-         .comapFlatMap(serialized -> reader.read(idList, provider, serialized), container -> container.pack(idList, provider));
++          // Pencil start - decompile fix
++          .comapFlatMap(
++              serialized -> reader.read(idList, provider, (PalettedContainerRO.PackedData<T>)serialized), container -> container.pack(idList, provider)
++          );
++          // Pencil end
+    }
+ 
+    public PalettedContainer(
 diff --git a/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java b/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java
-index 9db8c38..ed1d9c7 100644
+index 9db8c38..f502517 100644
 --- a/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java
 +++ b/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java
 @@ -53,7 +53,7 @@ public class EntityPositionSource implements PositionSource {
@@ -1158,12 +1868,12 @@ index 9db8c38..ed1d9c7 100644
  
     private void resolveEntity(Level world) {
 -      ((Optional)this.entityOrUuidOrId
-+      (this.entityOrUuidOrId // Pencil - decompile error
++      (this.entityOrUuidOrId // Pencil - decompile fix
              .map(
                 Optional::of,
                 entityId -> Optional.ofNullable(
 diff --git a/src/main/java/net/minecraft/world/level/levelgen/NoiseSettings.java b/src/main/java/net/minecraft/world/level/levelgen/NoiseSettings.java
-index 172fbe0..cf5a2b3 100644
+index 172fbe0..5c56def 100644
 --- a/src/main/java/net/minecraft/world/level/levelgen/NoiseSettings.java
 +++ b/src/main/java/net/minecraft/world/level/levelgen/NoiseSettings.java
 @@ -9,7 +9,7 @@ import net.minecraft.world.level.LevelHeightAccessor;
@@ -1171,12 +1881,140 @@ index 172fbe0..cf5a2b3 100644
  
  public record NoiseSettings(int minY, int height, int noiseSizeHorizontal, int noiseSizeVertical) {
 -   public static final Codec<NoiseSettings> CODEC = RecordCodecBuilder.create(
-+   public static final Codec<NoiseSettings> CODEC = RecordCodecBuilder.<NoiseSettings>create( // Pencil - decompile error
++   public static final Codec<NoiseSettings> CODEC = RecordCodecBuilder.<NoiseSettings>create( // Pencil - decompile fix
           instance -> instance.group(
                    Codec.intRange(DimensionType.MIN_Y, DimensionType.MAX_Y).fieldOf("min_y").forGetter(NoiseSettings::minY),
                    Codec.intRange(0, DimensionType.Y_SIZE).fieldOf("height").forGetter(NoiseSettings::height),
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/SurfaceRules.java b/src/main/java/net/minecraft/world/level/levelgen/SurfaceRules.java
+index f64725e..01ea9ec 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/SurfaceRules.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/SurfaceRules.java
+@@ -153,7 +153,7 @@ public class SurfaceRules {
+       }
+ 
+       public SurfaceRules.SurfaceRule apply(SurfaceRules.Context context) {
+-         return context.system::getBand;
++         return (x, y, z) -> context.system.getBand(x, y, z); // Pencil - decompile fix
+       }
+    }
+ 
+@@ -174,10 +174,10 @@ public class SurfaceRules {
+          return CODEC;
+       }
+ 
+-      public SurfaceRules.Condition apply(SurfaceRules.Context context) {
++      public SurfaceRules.Condition apply(SurfaceRules.Context givenContext) { // Pencil - decompile fix
+          class BiomeCondition extends SurfaceRules.LazyYCondition {
+             BiomeCondition() {
+-               super(context);
++               super(givenContext); // Pencil - decompile fix
+             }
+ 
+             @Override
+@@ -511,12 +511,14 @@ public class SurfaceRules {
+          return CODEC;
+       }
+ 
+-      public SurfaceRules.Condition apply(SurfaceRules.Context context) {
+-         final NormalNoise normalNoise = context.randomState.getOrCreateNoise(this.noise);
++      // Pencil start - decompile fix
++      public SurfaceRules.Condition apply(SurfaceRules.Context givenContext) {
++         final NormalNoise normalNoise = givenContext.randomState.getOrCreateNoise(this.noise);
++      // Pencil end - decompile fix
+ 
+          class NoiseThresholdCondition extends SurfaceRules.LazyXZCondition {
+             NoiseThresholdCondition() {
+-               super(context);
++               super(givenContext); // Pencil - decompile fix
+             }
+ 
+             @Override
+@@ -647,12 +649,12 @@ public class SurfaceRules {
+          return CODEC;
+       }
+ 
+-      public SurfaceRules.Condition apply(SurfaceRules.Context context) {
++      public SurfaceRules.Condition apply(SurfaceRules.Context givenContext) { // Pencil - decompile fix
+          final boolean bl = this.surfaceType == CaveSurface.CEILING;
+ 
+          class StoneDepthCondition extends SurfaceRules.LazyYCondition {
+             StoneDepthCondition() {
+-               super(context);
++               super(givenContext); // Pencil - decompile fix
+             }
+ 
+             @Override
+@@ -737,26 +739,32 @@ public class SurfaceRules {
+          return CODEC;
+       }
+ 
+-      public SurfaceRules.Condition apply(SurfaceRules.Context context) {
+-         final int i = this.trueAtAndBelow().resolveY(context.context);
+-         final int j = this.falseAtAndAbove().resolveY(context.context);
+-         final PositionalRandomFactory positionalRandomFactory = context.randomState.getOrCreateRandomFactory(this.randomName());
++      // Pencil start - decompile fix
++      public SurfaceRules.Condition apply(SurfaceRules.Context givenContext) {
++         final int i = this.trueAtAndBelow().resolveY(givenContext.context);
++         final int j = this.falseAtAndAbove().resolveY(givenContext.context);
++         final PositionalRandomFactory positionalRandomFactory = givenContext.randomState.getOrCreateRandomFactory(this.randomName());
++      // Pencil end
+ 
+          class VerticalGradientCondition extends SurfaceRules.LazyYCondition {
+             VerticalGradientCondition() {
+-               super(context);
++               super(givenContext);
+             }
+ 
+             @Override
+             protected boolean compute() {
+-               int i = this.context.blockY;
+-               if (i <= i) {
++               // Pencil start - decompile fix
++               int i2 = this.context.blockY;
++               if (i2 <= i) {
++               // Pencil end
+                   return true;
+-               } else if (i >= j) {
++               } else if (i2 >= j) { // Pencil - decompile fix
+                   return false;
+                } else {
+-                  double d = Mth.map((double)i, (double)i, (double)j, 1.0, 0.0);
+-                  RandomSource randomSource = positionalRandomFactory.at(this.context.blockX, i, this.context.blockZ);
++                  // Pencil start - decompile fix
++                  double d = Mth.map((double)i2, (double)i, (double)j, 1.0, 0.0);
++                  RandomSource randomSource = positionalRandomFactory.at(this.context.blockX, i2, this.context.blockZ);
++                  // Pencil end
+                   return (double)randomSource.nextFloat() < d;
+                }
+             }
+@@ -783,10 +791,10 @@ public class SurfaceRules {
+          return CODEC;
+       }
+ 
+-      public SurfaceRules.Condition apply(SurfaceRules.Context context) {
++      public SurfaceRules.Condition apply(SurfaceRules.Context givenContext) { // Pencil - decompile fix
+          class WaterCondition extends SurfaceRules.LazyYCondition {
+             WaterCondition() {
+-               super(context);
++               super(givenContext); // Pencil - decompile fix
+             }
+ 
+             @Override
+@@ -820,10 +828,10 @@ public class SurfaceRules {
+          return CODEC;
+       }
+ 
+-      public SurfaceRules.Condition apply(SurfaceRules.Context context) {
++      public SurfaceRules.Condition apply(SurfaceRules.Context givenContext) { // Pencil - decompile fix
+          class YCondition extends SurfaceRules.LazyYCondition {
+             YCondition() {
+-               super(context);
++               super(givenContext); // Pencil - decompile fix
+             }
+ 
+             @Override
 diff --git a/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java b/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java
-index c808b58..def65d6 100644
+index c808b58..45a55a3 100644
 --- a/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java
 +++ b/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java
 @@ -67,7 +67,7 @@ public class BlendingData {
@@ -1184,12 +2022,38 @@ index c808b58..def65d6 100644
     private final transient double[][] densities;
     private static final Codec<double[]> DOUBLE_ARRAY_CODEC = Codec.DOUBLE.listOf().xmap(Doubles::toArray, Doubles::asList);
 -   public static final Codec<BlendingData> CODEC = RecordCodecBuilder.create(
-+   public static final Codec<BlendingData> CODEC = RecordCodecBuilder.<BlendingData>create( // Pencil - decompile error
++   public static final Codec<BlendingData> CODEC = RecordCodecBuilder.<BlendingData>create( // Pencil - decompile fix
           instance -> instance.group(
                    Codec.INT.fieldOf("min_section").forGetter(blendingData -> blendingData.areaWithOldGeneration.getMinSection()),
                    Codec.INT.fieldOf("max_section").forGetter(blendingData -> blendingData.areaWithOldGeneration.getMaxSection()),
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java b/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java
+index 9c73d92..f6344ca 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java
+@@ -47,7 +47,7 @@ public abstract class StructurePiece {
+    private Rotation rotation;
+    protected int genDepth;
+    private final StructurePieceType type;
+-   private static final Set<Block> SHAPE_CHECK_BLOCKS = ImmutableSet.builder()
++   private static final Set<Block> SHAPE_CHECK_BLOCKS = ImmutableSet.<Block>builder() // Pencil - decompile fix
+       .add(Blocks.NETHER_BRICK_FENCE)
+       .add(Blocks.TORCH)
+       .add(Blocks.WALL_TORCH)
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/structure/pieces/PiecesContainer.java b/src/main/java/net/minecraft/world/level/levelgen/structure/pieces/PiecesContainer.java
+index 4b8c91f..a6fbab1 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/structure/pieces/PiecesContainer.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/structure/pieces/PiecesContainer.java
+@@ -19,7 +19,7 @@ import org.slf4j.Logger;
+ public record PiecesContainer(List<StructurePiece> pieces) {
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final ResourceLocation JIGSAW_RENAME = ResourceLocation.withDefaultNamespace("jigsaw");
+-   private static final Map<ResourceLocation, ResourceLocation> RENAMES = ImmutableMap.builder()
++   private static final Map<ResourceLocation, ResourceLocation> RENAMES = ImmutableMap.<ResourceLocation, ResourceLocation>builder() // Pencil - decompile fix
+       .put(ResourceLocation.withDefaultNamespace("nvi"), JIGSAW_RENAME)
+       .put(ResourceLocation.withDefaultNamespace("pcp"), JIGSAW_RENAME)
+       .put(ResourceLocation.withDefaultNamespace("bastionremnant"), JIGSAW_RENAME)
 diff --git a/src/main/java/net/minecraft/world/level/levelgen/structure/placement/RandomSpreadStructurePlacement.java b/src/main/java/net/minecraft/world/level/levelgen/structure/placement/RandomSpreadStructurePlacement.java
-index f1aa6fb..fd34318 100644
+index f1aa6fb..79f7849 100644
 --- a/src/main/java/net/minecraft/world/level/levelgen/structure/placement/RandomSpreadStructurePlacement.java
 +++ b/src/main/java/net/minecraft/world/level/levelgen/structure/placement/RandomSpreadStructurePlacement.java
 @@ -12,18 +12,22 @@ import net.minecraft.world.level.levelgen.LegacyRandomSource;
@@ -1198,7 +2062,7 @@ index f1aa6fb..fd34318 100644
  public class RandomSpreadStructurePlacement extends StructurePlacement {
 -   public static final MapCodec<RandomSpreadStructurePlacement> CODEC = RecordCodecBuilder.mapCodec(
 -         instance -> placementCodec(instance)
-+   // Pencil start - decompile error
++   // Pencil start - decompile fix
 +   public static final MapCodec<RandomSpreadStructurePlacement> CODEC = RecordCodecBuilder.<RandomSpreadStructurePlacement>mapCodec(
 +           instance -> placementCodec(instance)
                 .and(
@@ -1224,6 +2088,156 @@ index f1aa6fb..fd34318 100644
     private final int spacing;
     private final int separation;
     private final RandomSpreadType spreadType;
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/structure/structures/JigsawStructure.java b/src/main/java/net/minecraft/world/level/levelgen/structure/structures/JigsawStructure.java
+index a0a288d..880d78a 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/structure/structures/JigsawStructure.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/structure/structures/JigsawStructure.java
+@@ -28,7 +28,7 @@ public final class JigsawStructure extends Structure {
+    public static final int MAX_TOTAL_STRUCTURE_RANGE = 128;
+    public static final int MIN_DEPTH = 0;
+    public static final int MAX_DEPTH = 20;
+-   public static final MapCodec<JigsawStructure> CODEC = RecordCodecBuilder.mapCodec(
++   public static final MapCodec<JigsawStructure> CODEC = RecordCodecBuilder.<JigsawStructure>mapCodec( // Pencil - decompile fix
+          instance -> instance.group(
+                   settingsCodec(instance),
+                   StructureTemplatePool.CODEC.fieldOf("start_pool").forGetter(structure -> structure.startPool),
+@@ -39,8 +39,14 @@ public final class JigsawStructure extends Structure {
+                   Heightmap.Types.CODEC.optionalFieldOf("project_start_to_heightmap").forGetter(structure -> structure.projectStartToHeightmap),
+                   Codec.intRange(1, 128).fieldOf("max_distance_from_center").forGetter(structure -> structure.maxDistanceFromCenter),
+                   Codec.list(PoolAliasBinding.CODEC).optionalFieldOf("pool_aliases", List.of()).forGetter(structure -> structure.poolAliases),
+-                  DimensionPadding.CODEC.optionalFieldOf("dimension_padding", DEFAULT_DIMENSION_PADDING).forGetter(structure -> structure.dimensionPadding),
+-                  LiquidSettings.CODEC.optionalFieldOf("liquid_settings", DEFAULT_LIQUID_SETTINGS).forGetter(jigsawStructure -> jigsawStructure.liquidSettings)
++                   // Pencil start - decompile fix
++                   DimensionPadding.CODEC
++                       .optionalFieldOf("dimension_padding", DEFAULT_DIMENSION_PADDING)
++                       .forGetter(structure -> structure.dimensionPadding),
++                   LiquidSettings.CODEC
++                       .optionalFieldOf("liquid_settings", DEFAULT_LIQUID_SETTINGS)
++                       .forGetter(jigsawStructure -> jigsawStructure.liquidSettings)
++                   // Pencil end
+                )
+                .apply(instance, JigsawStructure::new)
+       )
+diff --git a/src/main/java/net/minecraft/world/level/storage/loot/ValidationContext.java b/src/main/java/net/minecraft/world/level/storage/loot/ValidationContext.java
+index 5895f07..6e98f3f 100644
+--- a/src/main/java/net/minecraft/world/level/storage/loot/ValidationContext.java
++++ b/src/main/java/net/minecraft/world/level/storage/loot/ValidationContext.java
+@@ -36,7 +36,7 @@ public class ValidationContext {
+    }
+ 
+    public ValidationContext enterElement(String name, ResourceKey<?> key) {
+-      Set<ResourceKey<?>> set = ImmutableSet.builder().addAll(this.visitedElements).add(key).build();
++      Set<ResourceKey<?>> set = ImmutableSet.<ResourceKey<?>>builder().addAll(this.visitedElements).add(key).build(); // Pencil - decompile fix
+       return new ValidationContext(this.reporter.forChild(name), this.params, this.resolver, set);
+    }
+ 
+diff --git a/src/main/java/net/minecraft/world/scores/Scoreboard.java b/src/main/java/net/minecraft/world/scores/Scoreboard.java
+index 80db93b..cb7f01e 100644
+--- a/src/main/java/net/minecraft/world/scores/Scoreboard.java
++++ b/src/main/java/net/minecraft/world/scores/Scoreboard.java
+@@ -63,8 +63,11 @@ public class Scoreboard {
+    }
+ 
+    public final void forAllObjectives(ObjectiveCriteria criterion, ScoreHolder scoreHolder, Consumer<ScoreAccess> action) {
+-      ((List)this.objectivesByCriteria.getOrDefault(criterion, Collections.emptyList()))
+-         .forEach(objective -> action.accept(this.getOrCreatePlayerScore(scoreHolder, objective, true)));
++      // Pencil start - decompile fix
++      this.objectivesByCriteria
++          .getOrDefault(criterion, Collections.emptyList())
++          .forEach(objective -> action.accept(this.getOrCreatePlayerScore(scoreHolder, objective, true)));
++      // Pencil end
+    }
+ 
+    private PlayerScores getOrCreatePlayerInfo(String scoreHolderName) {
+@@ -79,11 +82,11 @@ public class Scoreboard {
+       final boolean bl = forceWritable || !objective.getCriteria().isReadOnly();
+       PlayerScores playerScores = this.getOrCreatePlayerInfo(scoreHolder.getScoreboardName());
+       final MutableBoolean mutableBoolean = new MutableBoolean();
+-      final Score score = playerScores.getOrCreate(objective, scorex -> mutableBoolean.setTrue());
++      final Score scoreboardInst = playerScores.getOrCreate(objective, scorex -> mutableBoolean.setTrue()); // Pencil - decompile issue
+       return new ScoreAccess() {
+          @Override
+          public int get() {
+-            return score.value();
++            return scoreboardInst.value(); // Pencil - decompile issue
+          }
+ 
+          @Override
+@@ -94,14 +97,18 @@ public class Scoreboard {
+                boolean bl = mutableBoolean.isTrue();
+                if (objective.displayAutoUpdate()) {
+                   Component component = scoreHolder.getDisplayName();
+-                  if (component != null && !component.equals(score.display())) {
+-                     score.display(component);
++                  // Pencil start - decompile issue
++                  if (component != null && !component.equals(scoreboardInst.display())) {
++                     scoreboardInst.display(component);
++                  // Pencil end
+                      bl = true;
+                   }
+                }
+ 
+-               if (score != score.value()) {
+-                  score.value(score);
++               // Pencil start - decompile issue
++               if (score != scoreboardInst.value()) {
++                  scoreboardInst.value(score);
++               // Pencil end
+                   bl = true;
+                }
+ 
+@@ -114,26 +121,28 @@ public class Scoreboard {
+          @Nullable
+          @Override
+          public Component display() {
+-            return score.display();
++            return scoreboardInst.display(); // Pencil - decompile issue
+          }
+ 
+          @Override
+          public void display(@Nullable Component text) {
+-            if (mutableBoolean.isTrue() || !Objects.equals(text, score.display())) {
+-               score.display(text);
++            // Pencil start - decompile issue
++            if (mutableBoolean.isTrue() || !Objects.equals(text, scoreboardInst.display())) {
++               scoreboardInst.display(text);
++            // Pencil end
+                this.sendScoreToPlayers();
+             }
+          }
+ 
+          @Override
+          public void numberFormatOverride(@Nullable NumberFormat numberFormat) {
+-            score.numberFormat(numberFormat);
++            scoreboardInst.numberFormat(numberFormat); // Pencil - decompile issue
+             this.sendScoreToPlayers();
+          }
+ 
+          @Override
+          public boolean locked() {
+-            return score.isLocked();
++            return scoreboardInst.isLocked(); // Pencil - decompile issue
+          }
+ 
+          @Override
+@@ -147,7 +156,7 @@ public class Scoreboard {
+          }
+ 
+          private void setLocked(boolean locked) {
+-            score.setLocked(locked);
++            scoreboardInst.setLocked(locked); // Pencil - decompile issue
+             if (mutableBoolean.isTrue()) {
+                this.sendScoreToPlayers();
+             }
+@@ -156,7 +165,7 @@ public class Scoreboard {
+          }
+ 
+          private void sendScoreToPlayers() {
+-            Scoreboard.this.onScoreChanged(scoreHolder, objective, score);
++            Scoreboard.this.onScoreChanged(scoreHolder, objective, scoreboardInst); // Pencil - decompile issue
+             mutableBoolean.setFalse();
+          }
+       };
 -- 
 2.34.1
 
