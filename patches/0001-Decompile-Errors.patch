@@ -1,21 +1,32 @@
-From a916ac125a2f3137299aba08b8fdf76e86221473 Mon Sep 17 00:00:00 2001
+From 9fa35173906dc59796f674aee5f04f9218016845 Mon Sep 17 00:00:00 2001
 From: dueris <jedimastertoothless@hotmail.com>
-Date: Tue, 16 Jul 2024 17:57:50 -0700
+Date: Tue, 16 Jul 2024 19:42:10 -0700
 Subject: [PATCH] Decompile Errors
 
 ---
  .../java/net/minecraft/core/BlockPos.java     |   6 +-
  .../java/net/minecraft/core/HolderLookup.java |   2 +-
  .../java/net/minecraft/core/Registry.java     |  16 +--
+ .../core/component/DataComponentPatch.java    |   2 +-
  .../core/component/DataComponentType.java     |   2 +-
  .../core/component/TypedDataComponent.java    |   4 +-
  src/main/java/net/minecraft/nbt/NbtOps.java   | 111 ++++++++++++++----
+ .../network/chat/LastSeenMessages.java        |   2 +-
  .../minecraft/network/codec/StreamCodec.java  |   2 +-
- .../network/syncher/EntityDataSerializer.java |   4 +-
+ .../network/syncher/EntityDataSerializer.java |   2 +-
  .../net/minecraft/resources/RegistryOps.java  |   2 +-
+ .../net/minecraft/server/MinecraftServer.java |   2 +-
+ .../server/level/ChunkTaskPriorityQueue.java  |  16 ++-
+ .../server/level/DistanceManager.java         |  17 +--
  .../minecraft/server/level/ServerLevel.java   |  33 +++---
+ .../minecraft/server/level/ServerPlayer.java  |  19 +--
+ .../server/level/TickingTracker.java          |  15 ++-
+ .../network/ServerGamePacketListenerImpl.java |   6 +-
+ .../net/minecraft/util/SortedArraySet.java    |   2 +-
  .../net/minecraft/world/entity/Entity.java    |   2 +-
  .../net/minecraft/world/entity/Leashable.java |  10 +-
+ .../entity/ai/village/poi/PoiManager.java     |   2 +-
+ .../entity/ai/village/poi/PoiSection.java     |  16 +--
  .../minecraft/world/entity/animal/Sheep.java  |   8 +-
  .../world/entity/animal/axolotl/Axolotl.java  |  47 ++++----
  .../world/entity/monster/Zoglin.java          |   2 +-
@@ -23,12 +34,19 @@ Subject: [PATCH] Decompile Errors
  .../minecraft/world/entity/npc/Villager.java  |  21 ++--
  .../minecraft/world/entity/player/Player.java |  50 +++++---
  .../entity/projectile/AbstractArrow.java      |  35 +++++-
+ .../world/item/crafting/RecipeManager.java    |   2 +-
+ .../net/minecraft/world/level/GameRules.java  |   4 +-
  .../minecraft/world/level/biome/Climate.java  |   2 +-
  .../world/level/biome/MobSpawnSettings.java   |   2 +-
+ .../world/level/block/SculkSpreader.java      |  26 ++--
+ .../level/block/entity/SkullBlockEntity.java  |   2 +-
+ .../level/block/entity/vault/VaultConfig.java |  28 +++--
  .../block/state/properties/Property.java      |  12 +-
  .../level/gameevent/EntityPositionSource.java |   2 +-
+ .../world/level/levelgen/NoiseSettings.java   |   2 +-
  .../level/levelgen/blending/BlendingData.java |   2 +-
- 24 files changed, 252 insertions(+), 129 deletions(-)
+ .../RandomSpreadStructurePlacement.java       |  22 ++--
+ 42 files changed, 346 insertions(+), 218 deletions(-)
 
 diff --git a/src/main/java/net/minecraft/core/BlockPos.java b/src/main/java/net/minecraft/core/BlockPos.java
 index 112664b..4369e65 100644
@@ -97,6 +115,19 @@ index c888c1e..d02e770 100644
     }
  
     private DataResult<Holder.Reference<T>> safeCastToReference(Holder<T> entry) {
+diff --git a/src/main/java/net/minecraft/core/component/DataComponentPatch.java b/src/main/java/net/minecraft/core/component/DataComponentPatch.java
+index 627e0d2..d00f2be 100644
+--- a/src/main/java/net/minecraft/core/component/DataComponentPatch.java
++++ b/src/main/java/net/minecraft/core/component/DataComponentPatch.java
+@@ -55,7 +55,7 @@ public final class DataComponentPatch {
+             }
+          }
+ 
+-         return reference2ObjectMap;
++         return (Reference2ObjectMap) reference2ObjectMap; // Pencil - decompile error
+       });
+    public static final StreamCodec<RegistryFriendlyByteBuf, DataComponentPatch> STREAM_CODEC = new StreamCodec<RegistryFriendlyByteBuf, DataComponentPatch>() {
+       public DataComponentPatch decode(RegistryFriendlyByteBuf registryFriendlyByteBuf) {
 diff --git a/src/main/java/net/minecraft/core/component/DataComponentType.java b/src/main/java/net/minecraft/core/component/DataComponentType.java
 index 301c44f..5af6bac 100644
 --- a/src/main/java/net/minecraft/core/component/DataComponentType.java
@@ -291,6 +322,19 @@ index f8f4c3d..421ef2e 100644
     }
  
     public Tag createLongList(LongStream longStream) {
+diff --git a/src/main/java/net/minecraft/network/chat/LastSeenMessages.java b/src/main/java/net/minecraft/network/chat/LastSeenMessages.java
+index 3ec2f35..ae0420a 100644
+--- a/src/main/java/net/minecraft/network/chat/LastSeenMessages.java
++++ b/src/main/java/net/minecraft/network/chat/LastSeenMessages.java
+@@ -31,7 +31,7 @@ public record LastSeenMessages(List<MessageSignature> entries) {
+       public static final LastSeenMessages.Packed EMPTY = new LastSeenMessages.Packed(List.of());
+ 
+       public Packed(FriendlyByteBuf buf) {
+-         this(buf.readCollection(FriendlyByteBuf.limitValue(ArrayList::new, 20), MessageSignature.Packed::read));
++         this((List)buf.readCollection(FriendlyByteBuf.limitValue(ArrayList::new, 20), MessageSignature.Packed::read)); // Pencil - decompile error
+       }
+ 
+       public void write(FriendlyByteBuf buf) {
 diff --git a/src/main/java/net/minecraft/network/codec/StreamCodec.java b/src/main/java/net/minecraft/network/codec/StreamCodec.java
 index ffb5148..3072718 100644
 --- a/src/main/java/net/minecraft/network/codec/StreamCodec.java
@@ -305,17 +349,15 @@ index ffb5148..3072718 100644
  
     @FunctionalInterface
 diff --git a/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java b/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
-index f57ffa6..3e663fd 100644
+index f57ffa6..afdd2be 100644
 --- a/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
 +++ b/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
-@@ -13,7 +13,9 @@ public interface EntityDataSerializer<T> {
+@@ -13,7 +13,7 @@ public interface EntityDataSerializer<T> {
     T copy(T value);
  
     static <T> EntityDataSerializer<T> forValueType(StreamCodec<? super RegistryFriendlyByteBuf, T> codec) {
 -      return () -> codec;
-+      return () -> {
-+		  return codec;
-+	  };
++      return (ForValueType<T>) () -> codec; // Pencil - decompile error
     }
  
     public interface ForValueType<T> extends EntityDataSerializer<T> {
@@ -332,6 +374,81 @@ index 89232a4..96f4092 100644
                       .orElseGet(() -> DataResult.error(() -> "Can't find value: " + key))
                    : DataResult.error(() -> "Not a registry ops")
           )
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 9b30256..d23fc54 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -855,7 +855,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+       }
+    }
+ 
+-   protected void doRunTask(TickTask tickTask) {
++   public void doRunTask(TickTask tickTask) { // Pencil - decompile error
+       this.getProfiler().incrementCounter("runTask");
+       super.doRunTask(tickTask);
+    }
+diff --git a/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java b/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java
+index 1f06d30..359758b 100644
+--- a/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java
++++ b/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java
+@@ -16,9 +16,11 @@ import net.minecraft.world.level.ChunkPos;
+ 
+ public class ChunkTaskPriorityQueue<T> {
+    public static final int PRIORITY_LEVEL_COUNT = ChunkLevel.MAX_LEVEL + 2;
+-   private final List<Long2ObjectLinkedOpenHashMap<List<Optional<T>>>> taskQueue = IntStream.range(0, PRIORITY_LEVEL_COUNT)
+-      .mapToObj(i -> new Long2ObjectLinkedOpenHashMap())
+-      .collect(Collectors.toList());
++   // Pencil start - decompile error
++   private final List<Long2ObjectLinkedOpenHashMap<List<Optional<T>>>> taskQueue = (List)IntStream.range(0, PRIORITY_LEVEL_COUNT).mapToObj((i) -> {
++      return new Long2ObjectLinkedOpenHashMap();
++   }).collect(Collectors.toList());
++   // Pencil end
+    private volatile int firstQueue = PRIORITY_LEVEL_COUNT;
+    private final String name;
+    private final LongSet acquired = new LongOpenHashSet();
+@@ -94,7 +96,13 @@ public class ChunkTaskPriorityQueue<T> {
+             this.firstQueue++;
+          }
+ 
+-         return list.stream().map(optional -> optional.map(Either::left).orElseGet(() -> Either.right(this.acquire(l))));
++         // Pencil start - decompile error
++         return list.stream().map((optional) -> {
++            return (Either)optional.map(Either::left).orElseGet(() -> {
++               return Either.right(this.acquire(l));
++            });
++         });
++         // Pencil end
+       }
+    }
+ 
+diff --git a/src/main/java/net/minecraft/server/level/DistanceManager.java b/src/main/java/net/minecraft/server/level/DistanceManager.java
+index d06de01..635056c 100644
+--- a/src/main/java/net/minecraft/server/level/DistanceManager.java
++++ b/src/main/java/net/minecraft/server/level/DistanceManager.java
+@@ -270,22 +270,7 @@ public abstract class DistanceManager {
+    }
+ 
+    private void dumpTickets(String path) {
+-      try (FileOutputStream fileOutputStream = new FileOutputStream(new File(path))) {
+-         ObjectIterator var3 = this.tickets.long2ObjectEntrySet().iterator();
+-
+-         while (var3.hasNext()) {
+-            Entry<SortedArraySet<Ticket<?>>> entry = (Entry<SortedArraySet<Ticket<?>>>)var3.next();
+-            ChunkPos chunkPos = new ChunkPos(entry.getLongKey());
+-
+-            for (Ticket<?> ticket : (SortedArraySet)entry.getValue()) {
+-               fileOutputStream.write(
+-                  (chunkPos.x + "\t" + chunkPos.z + "\t" + ticket.getType() + "\t" + ticket.getTicketLevel() + "\t\n").getBytes(StandardCharsets.UTF_8)
+-               );
+-            }
+-         }
+-      } catch (IOException var10) {
+-         LOGGER.error("Failed to dump tickets to {}", path, var10);
+-      }
++      throw new UnsupportedOperationException(); // Pencil - decompile error
+    }
+ 
+    @VisibleForTesting
 diff --git a/src/main/java/net/minecraft/server/level/ServerLevel.java b/src/main/java/net/minecraft/server/level/ServerLevel.java
 index 36cbb10..6e8b9e6 100644
 --- a/src/main/java/net/minecraft/server/level/ServerLevel.java
@@ -386,6 +503,108 @@ index 36cbb10..6e8b9e6 100644
        } catch (Exception var6) {
           return "";
        }
+diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+index 0b085fc..4ebf4d4 100644
+--- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
++++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+@@ -4,13 +4,10 @@ import com.google.common.net.InetAddresses;
+ import com.mojang.authlib.GameProfile;
+ import com.mojang.datafixers.util.Either;
+ import com.mojang.logging.LogUtils;
++import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
+ import java.net.InetSocketAddress;
+-import java.util.Collection;
+-import java.util.List;
+-import java.util.Optional;
+-import java.util.OptionalInt;
+-import java.util.Set;
++import java.util.*;
+ import java.util.stream.Collectors;
+ import javax.annotation.Nullable;
+ import net.minecraft.ChatFormatting;
+@@ -340,10 +337,14 @@ public class ServerPlayer extends Player {
+    public void readAdditionalSaveData(CompoundTag nbt) {
+       super.readAdditionalSaveData(nbt);
+       if (nbt.contains("warden_spawn_tracker", 10)) {
+-         WardenSpawnTracker.CODEC
+-            .parse(new Dynamic(NbtOps.INSTANCE, nbt.get("warden_spawn_tracker")))
+-            .resultOrPartial(LOGGER::error)
+-            .ifPresent(sculkShriekerWarningManager -> this.wardenSpawnTracker = sculkShriekerWarningManager);
++         // Pencil start - decompile error
++		  DataResult dataresult = WardenSpawnTracker.CODEC.parse(new Dynamic(NbtOps.INSTANCE, nbt.get("warden_spawn_tracker")));
++		  Logger logger = ServerPlayer.LOGGER;
++         Objects.requireNonNull(logger);
++         ((DataResult<WardenSpawnTracker>) dataresult).resultOrPartial(logger::error).ifPresent((wardenspawntracker) -> {
++            this.wardenSpawnTracker = wardenspawntracker;
++         });
++         // Pencil start - decompile error
+       }
+ 
+       if (nbt.contains("enteredNetherPosition", 10)) {
+diff --git a/src/main/java/net/minecraft/server/level/TickingTracker.java b/src/main/java/net/minecraft/server/level/TickingTracker.java
+index 1c6d165..ec646ee 100644
+--- a/src/main/java/net/minecraft/server/level/TickingTracker.java
++++ b/src/main/java/net/minecraft/server/level/TickingTracker.java
+@@ -60,21 +60,20 @@ public class TickingTracker extends ChunkTracker {
+ 
+    public void replacePlayerTicketsLevel(int level) {
+       List<Pair<Ticket<ChunkPos>, Long>> list = new ArrayList<>();
+-      ObjectIterator var3 = this.tickets.long2ObjectEntrySet().iterator();
+ 
+-      while (var3.hasNext()) {
+-         Entry<SortedArraySet<Ticket<?>>> entry = (Entry<SortedArraySet<Ticket<?>>>)var3.next();
+-
+-         for (Ticket<?> ticket : (SortedArraySet)entry.getValue()) {
++      // Pencil start - decompile error
++      for (Entry<SortedArraySet<Ticket<?>>> entry : this.tickets.long2ObjectEntrySet()) {
++         for (Ticket<?> ticket : entry.getValue()) {
+             if (ticket.getType() == TicketType.PLAYER) {
+-               list.add(Pair.of(ticket, entry.getLongKey()));
++               list.add(Pair.of((Ticket<ChunkPos>)ticket, entry.getLongKey()));
+             }
+          }
+       }
+ 
+       for (Pair<Ticket<ChunkPos>, Long> pair : list) {
+-         Long long_ = (Long)pair.getSecond();
+-         Ticket<ChunkPos> ticket2 = (Ticket<ChunkPos>)pair.getFirst();
++         Long long_ = pair.getSecond();
++         Ticket<ChunkPos> ticket2 = pair.getFirst();
++      // Pencil end
+          this.removeTicket(long_, ticket2);
+          ChunkPos chunkPos = new ChunkPos(long_);
+          TicketType<ChunkPos> ticketType = ticket2.getType();
+diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index 0084c00..cc9add5 100644
+--- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -786,7 +786,11 @@ public class ServerGamePacketListenerImpl
+       if (itemStack.is(Items.WRITABLE_BOOK)) {
+          ItemStack itemStack2 = itemStack.transmuteCopy(Items.WRITTEN_BOOK);
+          itemStack2.remove(DataComponents.WRITABLE_BOOK_CONTENT);
+-         List<Filterable<Component>> list = pages.stream().map(page -> this.filterableFromOutgoing(page).map(Component::literal)).toList();
++         // Pencil start - decompile error
++         List<Filterable<Component>> list = (List<Filterable<Component>>) (List) pages.stream().map((filteredtext1) -> {
++            return this.filterableFromOutgoing(filteredtext1).map(s -> Component.literal(s));
++         }).toList();
++         // Pencil end
+          itemStack2.set(
+             DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(this.filterableFromOutgoing(title), this.player.getName().getString(), 0, list, true)
+          );
+diff --git a/src/main/java/net/minecraft/util/SortedArraySet.java b/src/main/java/net/minecraft/util/SortedArraySet.java
+index 1897e9a..acd03a4 100644
+--- a/src/main/java/net/minecraft/util/SortedArraySet.java
++++ b/src/main/java/net/minecraft/util/SortedArraySet.java
+@@ -28,7 +28,7 @@ public class SortedArraySet<T> extends AbstractSet<T> {
+    }
+ 
+    public static <T extends Comparable<T>> SortedArraySet<T> create(int initialCapacity) {
+-      return new SortedArraySet<>(initialCapacity, Comparator.naturalOrder());
++      return new SortedArraySet<>(initialCapacity, Comparator.<T>naturalOrder()); // Pencil - decompile error
+    }
+ 
+    public static <T> SortedArraySet<T> create(Comparator<T> comparator) {
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
 index 781025d..2becb4f 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
@@ -448,6 +667,50 @@ index d80a1aa..11bcc97 100644
     }
  
     @Nullable
+diff --git a/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiManager.java b/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiManager.java
+index 7eb27cc..11d9d9f 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiManager.java
++++ b/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiManager.java
+@@ -256,7 +256,7 @@ public class PoiManager extends SectionStorage<PoiSection> {
+    public void ensureLoadedAndValid(LevelReader world, BlockPos pos, int radius) {
+       SectionPos.aroundChunk(new ChunkPos(pos), Math.floorDiv(radius, 16), this.levelHeightAccessor.getMinSection(), this.levelHeightAccessor.getMaxSection())
+          .map(sectionPos -> Pair.of(sectionPos, this.getOrLoad(sectionPos.asLong())))
+-         .filter(pair -> !((Optional)pair.getSecond()).map(PoiSection::isValid).orElse(false))
++          .filter(pair -> !pair.getSecond().map(PoiSection::isValid).orElse(false)) // Pencil - decompile error
+          .map(pair -> ((SectionPos)pair.getFirst()).chunk())
+          .filter(chunkPos -> this.loadedChunks.add(chunkPos.toLong()))
+          .forEach(chunkPos -> world.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.EMPTY));
+diff --git a/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiSection.java b/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiSection.java
+index 5423be9..f6ca180 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiSection.java
++++ b/src/main/java/net/minecraft/world/entity/ai/village/poi/PoiSection.java
+@@ -30,17 +30,19 @@ public class PoiSection {
+    private final Runnable setDirty;
+    private boolean isValid;
+ 
++   // Pencil start - decompile error
+    public static Codec<PoiSection> codec(Runnable updateListener) {
+-      return RecordCodecBuilder.create(
+-            instance -> instance.group(
+-                     RecordCodecBuilder.point(updateListener),
+-                     Codec.BOOL.lenientOptionalFieldOf("Valid", false).forGetter(poiSet -> poiSet.isValid),
+-                     PoiRecord.codec(updateListener).listOf().fieldOf("Records").forGetter(poiSet -> ImmutableList.copyOf(poiSet.records.values()))
++      return RecordCodecBuilder.<PoiSection>create(
++              instance -> instance.group(
++                      RecordCodecBuilder.point(updateListener),
++                      Codec.BOOL.lenientOptionalFieldOf("Valid", Boolean.valueOf(false)).forGetter(poiSet -> poiSet.isValid),
++                      PoiRecord.codec(updateListener).listOf().fieldOf("Records").forGetter(poiSet -> ImmutableList.copyOf(poiSet.records.values()))
+                   )
+                   .apply(instance, PoiSection::new)
+-         )
+-         .orElseGet(Util.prefix("Failed to read POI section: ", LOGGER::error), () -> new PoiSection(updateListener, false, ImmutableList.of()));
++          )
++          .orElseGet(Util.prefix("Failed to read POI section: ", LOGGER::error), () -> new PoiSection(updateListener, false, ImmutableList.of()));
+    }
++   // Pencil end
+ 
+    public PoiSection(Runnable updateListener) {
+       this(updateListener, true, ImmutableList.of());
 diff --git a/src/main/java/net/minecraft/world/entity/animal/Sheep.java b/src/main/java/net/minecraft/world/entity/animal/Sheep.java
 index 16b8e1d..e62473a 100644
 --- a/src/main/java/net/minecraft/world/entity/animal/Sheep.java
@@ -700,6 +963,34 @@ index b0c7dbb..1dc7171 100644
     }
  
     @Override
+diff --git a/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java b/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java
+index ea6ef92..67a5541 100644
+--- a/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java
++++ b/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java
+@@ -110,7 +110,7 @@ public class RecipeManager extends SimpleJsonResourceReloadListener {
+    }
+ 
+    private <I extends RecipeInput, T extends Recipe<I>> Collection<RecipeHolder<T>> byType(RecipeType<T> type) {
+-      return this.byType.get(type);
++      return (Collection) this.byType.get(type); // Pencil - decompile error
+    }
+ 
+    public <I extends RecipeInput, T extends Recipe<I>> NonNullList<ItemStack> getRemainingItemsFor(RecipeType<T> type, I input, Level world) {
+diff --git a/src/main/java/net/minecraft/world/level/GameRules.java b/src/main/java/net/minecraft/world/level/GameRules.java
+index 0cfdd7c..477397c 100644
+--- a/src/main/java/net/minecraft/world/level/GameRules.java
++++ b/src/main/java/net/minecraft/world/level/GameRules.java
+@@ -252,8 +252,8 @@ public class GameRules {
+    }
+ 
+    private static <T extends GameRules.Value<T>> void callVisitorCap(GameRules.GameRuleTypeVisitor consumer, GameRules.Key<?> key, GameRules.Type<?> type) {
+-      consumer.visit(key, type);
+-      type.callVisitor(consumer, key);
++      consumer.visit((GameRules.Key<T>) key, (GameRules.Type<T>) type); // Pencil - decompile error
++      ((GameRules.Type<T>) type).callVisitor(consumer, (GameRules.Key<T>) key); // Pencil - decompile error
+    }
+ 
+    public void assignFrom(GameRules rules, @Nullable MinecraftServer server) {
 diff --git a/src/main/java/net/minecraft/world/level/biome/Climate.java b/src/main/java/net/minecraft/world/level/biome/Climate.java
 index dc368f3..2586170 100644
 --- a/src/main/java/net/minecraft/world/level/biome/Climate.java
@@ -726,6 +1017,114 @@ index 5224ec1..29b7314 100644
              instance -> instance.group(
                       BuiltInRegistries.ENTITY_TYPE.byNameCodec().fieldOf("type").forGetter(spawnEntry -> spawnEntry.type),
                       Weight.CODEC.fieldOf("weight").forGetter(WeightedEntry.IntrusiveBase::getWeight),
+diff --git a/src/main/java/net/minecraft/world/level/block/SculkSpreader.java b/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
+index 0322b11..0a8519e 100644
+--- a/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
++++ b/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
+@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
+ import com.google.common.collect.Sets;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.Codec;
++import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
+ import com.mojang.serialization.codecs.RecordCodecBuilder;
+ import it.unimi.dsi.fastutil.objects.Object2IntMap;
+@@ -12,13 +13,8 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+ import it.unimi.dsi.fastutil.objects.ObjectIterator;
+ import it.unimi.dsi.fastutil.objects.Object2IntMap.Entry;
+-import java.util.ArrayList;
+-import java.util.Collection;
+-import java.util.HashMap;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Optional;
+-import java.util.Set;
++
++import java.util.*;
+ import javax.annotation.Nullable;
+ import net.minecraft.Util;
+ import net.minecraft.core.BlockPos;
+@@ -104,16 +100,18 @@ public class SculkSpreader {
+    public void load(CompoundTag nbt) {
+       if (nbt.contains("cursors", 9)) {
+          this.cursors.clear();
+-         List<SculkSpreader.ChargeCursor> list = (List<SculkSpreader.ChargeCursor>)SculkSpreader.ChargeCursor.CODEC
+-            .listOf()
+-            .parse(new Dynamic(NbtOps.INSTANCE, nbt.getList("cursors", 10)))
+-            .resultOrPartial(LOGGER::error)
+-            .orElseGet(ArrayList::new);
++         // Pencil start - decompile error
++         DataResult<List<ChargeCursor>> dataresult = SculkSpreader.ChargeCursor.CODEC.listOf().parse(new Dynamic<>(NbtOps.INSTANCE, nbt.getList("cursors", 10)));
++         Logger logger = SculkSpreader.LOGGER;
++
++         Objects.requireNonNull(logger);
++         List<SculkSpreader.ChargeCursor> list = (List) dataresult.resultOrPartial(logger::error).orElseGet(ArrayList::new);
+          int i = Math.min(list.size(), 32);
+ 
+-         for (int j = 0; j < i; j++) {
+-            this.addCursor(list.get(j));
++         for (int j = 0; j < i; ++j) {
++            this.addCursor((SculkSpreader.ChargeCursor) list.get(j));
+          }
++         // Pencil end
+       }
+    }
+ 
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java
+index e5a4fe8..e883244 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java
+@@ -90,7 +90,7 @@ public class SkullBlockEntity extends BlockEntity {
+             optional -> {
+                LoadingCache<UUID, CompletableFuture<Optional<GameProfile>>> loadingCache = profileCacheById;
+                return loadingCache != null && !optional.isEmpty()
+-                  ? ((CompletableFuture)loadingCache.getUnchecked(optional.get().getId())).thenApply(optional2 -> optional2.or(() -> optional))
++                  ? (loadingCache.getUnchecked(optional.get().getId())).thenApply(optional2 -> optional2.or(() -> optional)) // Pencil - decompile error
+                   : CompletableFuture.completedFuture(Optional.empty());
+             }
+          );
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/vault/VaultConfig.java b/src/main/java/net/minecraft/world/level/block/entity/vault/VaultConfig.java
+index cf472f0..9fa11ae 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/vault/VaultConfig.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/vault/VaultConfig.java
+@@ -23,19 +23,25 @@ public record VaultConfig(
+ ) {
+    static final String TAG_NAME = "config";
+    static VaultConfig DEFAULT = new VaultConfig();
+-   static Codec<VaultConfig> CODEC = RecordCodecBuilder.create(
+-         instance -> instance.group(
+-                  ResourceKey.codec(Registries.LOOT_TABLE).lenientOptionalFieldOf("loot_table", DEFAULT.lootTable()).forGetter(VaultConfig::lootTable),
+-                  Codec.DOUBLE.lenientOptionalFieldOf("activation_range", DEFAULT.activationRange()).forGetter(VaultConfig::activationRange),
+-                  Codec.DOUBLE.lenientOptionalFieldOf("deactivation_range", DEFAULT.deactivationRange()).forGetter(VaultConfig::deactivationRange),
+-                  ItemStack.lenientOptionalFieldOf("key_item").forGetter(VaultConfig::keyItem),
+-                  ResourceKey.codec(Registries.LOOT_TABLE)
+-                     .lenientOptionalFieldOf("override_loot_table_to_display")
+-                     .forGetter(VaultConfig::overrideLootTableToDisplay)
++   // Pencil start - decompile error
++   static Codec<VaultConfig> CODEC = RecordCodecBuilder.<VaultConfig>create(
++           instance -> instance.group(
++                   ResourceKey.codec(Registries.LOOT_TABLE).lenientOptionalFieldOf("loot_table", DEFAULT.lootTable()).forGetter(VaultConfig::lootTable),
++                   Codec.DOUBLE
++                       .lenientOptionalFieldOf("activation_range", Double.valueOf(DEFAULT.activationRange()))
++                       .forGetter(VaultConfig::activationRange),
++                   Codec.DOUBLE
++                       .lenientOptionalFieldOf("deactivation_range", Double.valueOf(DEFAULT.deactivationRange()))
++                       .forGetter(VaultConfig::deactivationRange),
++                   ItemStack.lenientOptionalFieldOf("key_item").forGetter(VaultConfig::keyItem),
++                   ResourceKey.codec(Registries.LOOT_TABLE)
++                       .lenientOptionalFieldOf("override_loot_table_to_display")
++                       .forGetter(VaultConfig::overrideLootTableToDisplay)
+                )
+                .apply(instance, VaultConfig::new)
+-      )
+-      .validate(VaultConfig::validate);
++       )
++       .validate(VaultConfig::validate);
++   // Pencil end
+ 
+    private VaultConfig() {
+       this(
 diff --git a/src/main/java/net/minecraft/world/level/block/state/properties/Property.java b/src/main/java/net/minecraft/world/level/block/state/properties/Property.java
 index df9c2ac..4fdbe6b 100644
 --- a/src/main/java/net/minecraft/world/level/block/state/properties/Property.java
@@ -763,6 +1162,19 @@ index 9db8c38..ed1d9c7 100644
              .map(
                 Optional::of,
                 entityId -> Optional.ofNullable(
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/NoiseSettings.java b/src/main/java/net/minecraft/world/level/levelgen/NoiseSettings.java
+index 172fbe0..cf5a2b3 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/NoiseSettings.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/NoiseSettings.java
+@@ -9,7 +9,7 @@ import net.minecraft.world.level.LevelHeightAccessor;
+ import net.minecraft.world.level.dimension.DimensionType;
+ 
+ public record NoiseSettings(int minY, int height, int noiseSizeHorizontal, int noiseSizeVertical) {
+-   public static final Codec<NoiseSettings> CODEC = RecordCodecBuilder.create(
++   public static final Codec<NoiseSettings> CODEC = RecordCodecBuilder.<NoiseSettings>create( // Pencil - decompile error
+          instance -> instance.group(
+                   Codec.intRange(DimensionType.MIN_Y, DimensionType.MAX_Y).fieldOf("min_y").forGetter(NoiseSettings::minY),
+                   Codec.intRange(0, DimensionType.Y_SIZE).fieldOf("height").forGetter(NoiseSettings::height),
 diff --git a/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java b/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java
 index c808b58..def65d6 100644
 --- a/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java
@@ -776,6 +1188,42 @@ index c808b58..def65d6 100644
           instance -> instance.group(
                    Codec.INT.fieldOf("min_section").forGetter(blendingData -> blendingData.areaWithOldGeneration.getMinSection()),
                    Codec.INT.fieldOf("max_section").forGetter(blendingData -> blendingData.areaWithOldGeneration.getMaxSection()),
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/structure/placement/RandomSpreadStructurePlacement.java b/src/main/java/net/minecraft/world/level/levelgen/structure/placement/RandomSpreadStructurePlacement.java
+index f1aa6fb..fd34318 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/structure/placement/RandomSpreadStructurePlacement.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/structure/placement/RandomSpreadStructurePlacement.java
+@@ -12,18 +12,22 @@ import net.minecraft.world.level.levelgen.LegacyRandomSource;
+ import net.minecraft.world.level.levelgen.WorldgenRandom;
+ 
+ public class RandomSpreadStructurePlacement extends StructurePlacement {
+-   public static final MapCodec<RandomSpreadStructurePlacement> CODEC = RecordCodecBuilder.mapCodec(
+-         instance -> placementCodec(instance)
++   // Pencil start - decompile error
++   public static final MapCodec<RandomSpreadStructurePlacement> CODEC = RecordCodecBuilder.<RandomSpreadStructurePlacement>mapCodec(
++           instance -> placementCodec(instance)
+                .and(
+-                  instance.group(
+-                     Codec.intRange(0, 4096).fieldOf("spacing").forGetter(RandomSpreadStructurePlacement::spacing),
+-                     Codec.intRange(0, 4096).fieldOf("separation").forGetter(RandomSpreadStructurePlacement::separation),
+-                     RandomSpreadType.CODEC.optionalFieldOf("spread_type", RandomSpreadType.LINEAR).forGetter(RandomSpreadStructurePlacement::spreadType)
+-                  )
++                   instance.group(
++                       Codec.intRange(0, 4096).fieldOf("spacing").forGetter(RandomSpreadStructurePlacement::spacing),
++                       Codec.intRange(0, 4096).fieldOf("separation").forGetter(RandomSpreadStructurePlacement::separation),
++                       RandomSpreadType.CODEC
++                           .optionalFieldOf("spread_type", RandomSpreadType.LINEAR)
++                           .forGetter(RandomSpreadStructurePlacement::spreadType)
++                   )
+                )
+                .apply(instance, RandomSpreadStructurePlacement::new)
+-      )
+-      .validate(RandomSpreadStructurePlacement::validate);
++       )
++       .validate(RandomSpreadStructurePlacement::validate);
++   // Pencil end
+    private final int spacing;
+    private final int separation;
+    private final RandomSpreadType spreadType;
 -- 
 2.34.1
 
