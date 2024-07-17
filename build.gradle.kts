@@ -102,19 +102,13 @@ tasks.test {
 
 tasks.create("initPatches") {
     doLast {
-        val submodulePath = "Pencil-Server"
-        val commits = getSubmoduleCommits(submodulePath)
-
-        val patchesDir = File(submodulePath, "patches")
-        patchesDir.mkdirs()
+        val submodulePath = rootDir.resolve("Pencil-Server")
+        val commits = getSubmoduleCommits(submodulePath.absolutePath)
 
         commits.reversed().forEachIndexed { index, commit ->
-            try {
-                println("Found commit $commit, applying...")
-                runCommand("git format-patch -1 ".plus(commit), File(submodulePath))
-            } catch (e : Exception) {
-                throw RuntimeException("Unable to apply patch \"$commit\"", e)
-            }
+            if (index == 0) return@forEachIndexed
+            println("Found commit $commit, building...")
+            runCommand("git|format-patch|-${index}|-o|../patches|".plus(commit), submodulePath)
         }
     }
 }
@@ -166,9 +160,17 @@ tasks.create("genSource") {
         buildSourceRepo()
 
         runCommand("git|add|.", File("Pencil-Server"))
-        runCommand("git|commit|-m|\"Initial Source\"", File("Pencil-Server"))
+        runCommand("git|commit|-m|Initial Source", File("Pencil-Server"))
 
-        getSubmoduleCommits("Pencil-Server").forEach { println("Found commit: $it") }
+        rootDir.resolve("patches").listFiles()?.forEach {
+            println("Found commit $it, applying...")
+            val input = it.name.replace("-", " ")
+            val removedSuffix = input.removeSuffix(".patch")
+            val result = removedSuffix.substring(5, minOf(100, removedSuffix.length))
+            runCommand("git|apply|${it}|--3way|--ignore-whitespace", rootDir.resolve("Pencil-Server"))
+            runCommand("git|add|.", rootDir.resolve("Pencil-Server"))
+            runCommand("git|commit|-m|$result", rootDir.resolve("Pencil-Server"))
+        }
 
         println("Patches applied successfully")
     }
@@ -255,14 +257,29 @@ fun buildSourceRepo() {
         plugins {
             id("java")
             kotlin("jvm")
+            idea
         }
-
+        
         group = "net.minecraft"
-        version = "$MINECRAFT_VERSION"
-
+        version = "1.21"
+        
         repositories {
             mavenCentral()
         }
+        
+        dependencies {
+            val dependencyCache = projectDir.parentFile.resolve(".gradle").resolve("caches").resolve("paperweight").resolve("jars").resolve("minecraft")
+            if (dependencyCache.exists() && dependencyCache.isDirectory) {
+                dependencyCache.walkTopDown().filter { it.isFile && it.extension == "jar" }.forEach { file ->
+                    implementation(files(file))
+                }
+            }
+            implementation("org.jetbrains:annotations:24.0.0")
+            implementation("jakarta.annotation:jakarta.annotation-api:3.0.0")
+            implementation("com.google.code.findbugs:jsr305:3.0.2")
+        
+        }
+
         """.trimIndent())
 
     gradlePropertiesFile.writeText("""

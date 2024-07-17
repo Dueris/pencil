@@ -1,0 +1,781 @@
+From a916ac125a2f3137299aba08b8fdf76e86221473 Mon Sep 17 00:00:00 2001
+From: dueris <jedimastertoothless@hotmail.com>
+Date: Tue, 16 Jul 2024 17:57:50 -0700
+Subject: [PATCH] Decompile Errors
+
+---
+ .../java/net/minecraft/core/BlockPos.java     |   6 +-
+ .../java/net/minecraft/core/HolderLookup.java |   2 +-
+ .../java/net/minecraft/core/Registry.java     |  16 +--
+ .../core/component/DataComponentType.java     |   2 +-
+ .../core/component/TypedDataComponent.java    |   4 +-
+ src/main/java/net/minecraft/nbt/NbtOps.java   | 111 ++++++++++++++----
+ .../minecraft/network/codec/StreamCodec.java  |   2 +-
+ .../network/syncher/EntityDataSerializer.java |   4 +-
+ .../net/minecraft/resources/RegistryOps.java  |   2 +-
+ .../minecraft/server/level/ServerLevel.java   |  33 +++---
+ .../net/minecraft/world/entity/Entity.java    |   2 +-
+ .../net/minecraft/world/entity/Leashable.java |  10 +-
+ .../minecraft/world/entity/animal/Sheep.java  |   8 +-
+ .../world/entity/animal/axolotl/Axolotl.java  |  47 ++++----
+ .../world/entity/monster/Zoglin.java          |   2 +-
+ .../world/entity/monster/hoglin/Hoglin.java   |   4 +-
+ .../minecraft/world/entity/npc/Villager.java  |  21 ++--
+ .../minecraft/world/entity/player/Player.java |  50 +++++---
+ .../entity/projectile/AbstractArrow.java      |  35 +++++-
+ .../minecraft/world/level/biome/Climate.java  |   2 +-
+ .../world/level/biome/MobSpawnSettings.java   |   2 +-
+ .../block/state/properties/Property.java      |  12 +-
+ .../level/gameevent/EntityPositionSource.java |   2 +-
+ .../level/levelgen/blending/BlendingData.java |   2 +-
+ 24 files changed, 252 insertions(+), 129 deletions(-)
+
+diff --git a/src/main/java/net/minecraft/core/BlockPos.java b/src/main/java/net/minecraft/core/BlockPos.java
+index 112664b..4369e65 100644
+--- a/src/main/java/net/minecraft/core/BlockPos.java
++++ b/src/main/java/net/minecraft/core/BlockPos.java
+@@ -400,10 +400,10 @@ public class BlockPos extends Vec3i {
+    }
+ 
+    public static Iterable<BlockPos> betweenClosed(int startX, int startY, int startZ, int endX, int endY, int endZ) {
+-      int i = endX - startX + 1;
++      int ia = endX - startX + 1; // Pencil - decompile error
+       int j = endY - startY + 1;
+       int k = endZ - startZ + 1;
+-      int l = i * j * k;
++      int l = ia * j * k; // Pencil - decompile error
+       return () -> new AbstractIterator<BlockPos>() {
+             private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+             private int index;
+@@ -412,7 +412,7 @@ public class BlockPos extends Vec3i {
+                if (this.index == l) {
+                   return (BlockPos)this.endOfData();
+                } else {
+-                  int i = this.index % i;
++                  int i = this.index % ia; // Pencil - decompile error
+                   int j = this.index / i;
+                   int k = j % j;
+                   int l = j / j;
+diff --git a/src/main/java/net/minecraft/core/HolderLookup.java b/src/main/java/net/minecraft/core/HolderLookup.java
+index eab6975..0f0d550 100644
+--- a/src/main/java/net/minecraft/core/HolderLookup.java
++++ b/src/main/java/net/minecraft/core/HolderLookup.java
+@@ -36,7 +36,7 @@ public interface HolderLookup<T> extends HolderGetter<T> {
+       }
+ 
+       default <V> RegistryOps<V> createSerializationContext(DynamicOps<V> delegate) {
+-         return RegistryOps.create((DynamicOps<T>)delegate, this);
++         return RegistryOps.create(delegate, this); // Pencil - decompile error
+       }
+ 
+       default HolderGetter.Provider asGetterLookup() {
+diff --git a/src/main/java/net/minecraft/core/Registry.java b/src/main/java/net/minecraft/core/Registry.java
+index c888c1e..d02e770 100644
+--- a/src/main/java/net/minecraft/core/Registry.java
++++ b/src/main/java/net/minecraft/core/Registry.java
+@@ -34,14 +34,16 @@ public interface Registry<T> extends Keyable, IdMap<T> {
+    }
+ 
+    private Codec<Holder.Reference<T>> referenceHolderWithLifecycle() {
++      // Pencil start - decompile error
+       Codec<Holder.Reference<T>> codec = ResourceLocation.CODEC
+-         .comapFlatMap(
+-            id -> this.getHolder(id)
+-                  .<DataResult>map(DataResult::success)
+-                  .orElseGet(() -> DataResult.error(() -> "Unknown registry key in " + this.key() + ": " + id)),
+-            entry -> entry.key().location()
+-         );
+-      return ExtraCodecs.overrideLifecycle(codec, entry -> this.registrationInfo(entry.key()).map(RegistrationInfo::lifecycle).orElse(Lifecycle.experimental()));
++          .comapFlatMap(
++              id -> this.getHolder(id).map(DataResult::success).orElseGet(() -> DataResult.error(() -> "Unknown registry key in " + this.key() + ": " + id)),
++              entry -> entry.key().location()
++          );
++      return ExtraCodecs.overrideLifecycle(
++          codec, entry -> this.registrationInfo(entry.key()).map(RegistrationInfo::lifecycle).orElse(Lifecycle.experimental())
++      );
++      // Pencil end
+    }
+ 
+    private DataResult<Holder.Reference<T>> safeCastToReference(Holder<T> entry) {
+diff --git a/src/main/java/net/minecraft/core/component/DataComponentType.java b/src/main/java/net/minecraft/core/component/DataComponentType.java
+index 301c44f..5af6bac 100644
+--- a/src/main/java/net/minecraft/core/component/DataComponentType.java
++++ b/src/main/java/net/minecraft/core/component/DataComponentType.java
+@@ -100,7 +100,7 @@ public interface DataComponentType<T> {
+ 
+          @Override
+          public String toString() {
+-            return Util.getRegisteredName((Registry<DataComponentType.Builder.SimpleType<T>>)BuiltInRegistries.DATA_COMPONENT_TYPE, this);
++            return Util.getRegisteredName(BuiltInRegistries.DATA_COMPONENT_TYPE, this); // Pencil - decompile error
+          }
+       }
+    }
+diff --git a/src/main/java/net/minecraft/core/component/TypedDataComponent.java b/src/main/java/net/minecraft/core/component/TypedDataComponent.java
+index bb02223..88a6d29 100644
+--- a/src/main/java/net/minecraft/core/component/TypedDataComponent.java
++++ b/src/main/java/net/minecraft/core/component/TypedDataComponent.java
+@@ -11,7 +11,7 @@ public record TypedDataComponent<T>(DataComponentType<T> type, T value) {
+    public static final StreamCodec<RegistryFriendlyByteBuf, TypedDataComponent<?>> STREAM_CODEC = new StreamCodec<RegistryFriendlyByteBuf, TypedDataComponent<?>>() {
+       public TypedDataComponent<?> decode(RegistryFriendlyByteBuf registryFriendlyByteBuf) {
+          DataComponentType<?> dataComponentType = DataComponentType.STREAM_CODEC.decode(registryFriendlyByteBuf);
+-         return decodeTyped(registryFriendlyByteBuf, (DataComponentType<T>)dataComponentType);
++         return decodeTyped(registryFriendlyByteBuf, dataComponentType); // Pencil - decompile error
+       }
+ 
+       private static <T> TypedDataComponent<T> decodeTyped(RegistryFriendlyByteBuf buf, DataComponentType<T> type) {
+@@ -19,7 +19,7 @@ public record TypedDataComponent<T>(DataComponentType<T> type, T value) {
+       }
+ 
+       public void encode(RegistryFriendlyByteBuf registryFriendlyByteBuf, TypedDataComponent<?> typedDataComponent) {
+-         encodeCap(registryFriendlyByteBuf, (TypedDataComponent<T>)typedDataComponent);
++         encodeCap(registryFriendlyByteBuf, typedDataComponent); // Pencil - decompile error
+       }
+ 
+       private static <T> void encodeCap(RegistryFriendlyByteBuf buf, TypedDataComponent<T> component) {
+diff --git a/src/main/java/net/minecraft/nbt/NbtOps.java b/src/main/java/net/minecraft/nbt/NbtOps.java
+index f8f4c3d..421ef2e 100644
+--- a/src/main/java/net/minecraft/nbt/NbtOps.java
++++ b/src/main/java/net/minecraft/nbt/NbtOps.java
+@@ -10,15 +10,11 @@ import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+ import it.unimi.dsi.fastutil.ints.IntArrayList;
+ import it.unimi.dsi.fastutil.longs.LongArrayList;
+ import java.nio.ByteBuffer;
+-import java.util.ArrayList;
+-import java.util.Arrays;
+-import java.util.Collection;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Optional;
++import java.util.*;
+ import java.util.Map.Entry;
+ import java.util.function.BiConsumer;
+ import java.util.function.Consumer;
++import java.util.stream.Collectors;
+ import java.util.stream.IntStream;
+ import java.util.stream.LongStream;
+ import java.util.stream.Stream;
+@@ -167,11 +163,23 @@ public class NbtOps implements DynamicOps<Tag> {
+    }
+ 
+    public DataResult<Consumer<BiConsumer<Tag, Tag>>> getMapEntries(Tag tag) {
+-      return tag instanceof CompoundTag compoundTag ? DataResult.success((Consumer<BiConsumer>)biConsumer -> {
+-         for (Entry<String, Tag> entry : compoundTag.entrySet()) {
+-            biConsumer.accept(this.createString(entry.getKey()), entry.getValue());
+-         }
+-      }) : DataResult.error(() -> "Not a map: " + tag);
++      // Pencil start - decompile error
++      if (tag instanceof CompoundTag compoundTag) {
++         return DataResult.success((biConsumer) -> {
++            Iterator var3 = compoundTag.entrySet().iterator();
++
++            while(var3.hasNext()) {
++               Map.Entry<String, Tag> entry = (Map.Entry)var3.next();
++               biConsumer.accept(this.createString((String)entry.getKey()), (Tag)entry.getValue());
++            }
++
++         });
++      } else {
++         return DataResult.error(() -> {
++            return "Not a map: " + String.valueOf(tag);
++         });
++      }
++      // Pencil end
+    }
+ 
+    public DataResult<MapLike<Tag>> getMap(Tag tag) {
+@@ -227,19 +235,56 @@ public class NbtOps implements DynamicOps<Tag> {
+    }
+ 
+    public DataResult<Consumer<Consumer<Tag>>> getList(Tag tag) {
++      // Pencil start - decompile error
+       if (tag instanceof ListTag listTag) {
+-         return listTag.getElementType() == 10 ? DataResult.success((Consumer<Consumer>)consumer -> {
+-            for (Tag tagx : listTag) {
+-               consumer.accept(tryUnwrap((CompoundTag)tagx));
+-            }
+-         }) : DataResult.success(listTag::forEach);
++         if (listTag.getElementType() == 10) {
++            return DataResult.success((consumer) -> {
++               Iterator var2 = listTag.iterator();
++
++               while (var2.hasNext()) {
++                  Tag tagN = (Tag)var2.next();
++                  consumer.accept(tryUnwrap((CompoundTag)tagN));
++               }
++
++            });
++         } else {
++            Objects.requireNonNull(listTag);
++            return DataResult.success(listTag::forEach);
++         }
++      } else if (tag instanceof CollectionTag<?> collectionTag) {
++         Objects.requireNonNull(collectionTag);
++         return DataResult.success(collectionTag::forEach);
+       } else {
+-         return tag instanceof CollectionTag<?> collectionTag ? DataResult.success(collectionTag::forEach) : DataResult.error(() -> "Not a list: " + tag);
++         return DataResult.error(() -> {
++            return "Not a list: " + String.valueOf(tag);
++         });
+       }
++      // Pencil end
+    }
+ 
+    public DataResult<ByteBuffer> getByteBuffer(Tag tag) {
+-      return tag instanceof ByteArrayTag byteArrayTag ? DataResult.success(ByteBuffer.wrap(byteArrayTag.getAsByteArray())) : super.getByteBuffer(tag);
++      // Pencil start - decompile error
++	   if (tag instanceof ByteArrayTag byteArrayTag)
++		   return DataResult.success(ByteBuffer.wrap(byteArrayTag.getAsByteArray()));
++      return this.getStream(tag).flatMap((stream) -> {
++         List<Tag> list = (List)stream.collect(Collectors.toList());
++         if (!list.stream().allMatch((element) -> {
++            return this.getNumberValue(element).isSuccess();
++         })) {
++            return DataResult.error(() -> {
++               return "Some elements are not bytes: " + tag;
++            });
++         } else {
++            ByteBuffer buffer = ByteBuffer.wrap(new byte[list.size()]);
++
++            for(int i = 0; i < list.size(); ++i) {
++               buffer.put(i, ((Number)this.getNumberValue(list.get(i)).result().get()).byteValue());
++            }
++
++            return DataResult.success(buffer);
++         }
++      });
++      // Pencil end - decompile error
+    }
+ 
+    public Tag createByteList(ByteBuffer byteBuffer) {
+@@ -250,7 +295,20 @@ public class NbtOps implements DynamicOps<Tag> {
+    }
+ 
+    public DataResult<IntStream> getIntStream(Tag tag) {
+-      return tag instanceof IntArrayTag intArrayTag ? DataResult.success(Arrays.stream(intArrayTag.getAsIntArray())) : super.getIntStream(tag);
++      // Pencil start - decompile error
++	   if (tag instanceof IntArrayTag intArrayTag)
++		   return DataResult.success(Arrays.stream(intArrayTag.getAsIntArray()));
++      return this.getStream(tag).flatMap((stream) -> {
++         List<Tag> list = stream.toList();
++         return list.stream().allMatch((element) -> {
++            return this.getNumberValue(element).isSuccess();
++         }) ? DataResult.success(list.stream().mapToInt((element) -> {
++            return ((Number)this.getNumberValue(element).getOrThrow()).intValue();
++         })) : DataResult.error(() -> {
++            return "Some elements are not ints: " + tag;
++         });
++      });
++      // Pencil end
+    }
+ 
+    public Tag createIntList(IntStream intStream) {
+@@ -258,7 +316,20 @@ public class NbtOps implements DynamicOps<Tag> {
+    }
+ 
+    public DataResult<LongStream> getLongStream(Tag tag) {
+-      return tag instanceof LongArrayTag longArrayTag ? DataResult.success(Arrays.stream(longArrayTag.getAsLongArray())) : super.getLongStream(tag);
++      // Pencil start - decompile error
++	   if (tag instanceof LongArrayTag longArrayTag)
++		   return DataResult.success(Arrays.stream(longArrayTag.getAsLongArray()));
++      return this.getStream(tag).flatMap((stream) -> {
++         List<Tag> list = stream.toList();
++         return list.stream().allMatch((element) -> {
++            return this.getNumberValue(element).isSuccess();
++         }) ? DataResult.success(list.stream().mapToLong((element) -> {
++            return ((Number)this.getNumberValue(element).getOrThrow()).longValue();
++         })) : DataResult.error(() -> {
++            return "Some elements are not longs: " + tag;
++         });
++      });
++      // Pencil end
+    }
+ 
+    public Tag createLongList(LongStream longStream) {
+diff --git a/src/main/java/net/minecraft/network/codec/StreamCodec.java b/src/main/java/net/minecraft/network/codec/StreamCodec.java
+index ffb5148..3072718 100644
+--- a/src/main/java/net/minecraft/network/codec/StreamCodec.java
++++ b/src/main/java/net/minecraft/network/codec/StreamCodec.java
+@@ -290,7 +290,7 @@ public interface StreamCodec<B, V> extends StreamDecoder<B, V>, StreamEncoder<B,
+    }
+ 
+    default <S extends B> StreamCodec<S, V> cast() {
+-      return this;
++      return (StreamCodec<S, V>) this; // Pencil - decompile error
+    }
+ 
+    @FunctionalInterface
+diff --git a/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java b/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
+index f57ffa6..3e663fd 100644
+--- a/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
++++ b/src/main/java/net/minecraft/network/syncher/EntityDataSerializer.java
+@@ -13,7 +13,9 @@ public interface EntityDataSerializer<T> {
+    T copy(T value);
+ 
+    static <T> EntityDataSerializer<T> forValueType(StreamCodec<? super RegistryFriendlyByteBuf, T> codec) {
+-      return () -> codec;
++      return () -> {
++		  return codec;
++	  };
+    }
+ 
+    public interface ForValueType<T> extends EntityDataSerializer<T> {
+diff --git a/src/main/java/net/minecraft/resources/RegistryOps.java b/src/main/java/net/minecraft/resources/RegistryOps.java
+index 89232a4..96f4092 100644
+--- a/src/main/java/net/minecraft/resources/RegistryOps.java
++++ b/src/main/java/net/minecraft/resources/RegistryOps.java
+@@ -83,7 +83,7 @@ public class RegistryOps<T> extends DelegatingOps<T> {
+                   ? registryOps.lookupProvider
+                      .lookup(resourceKey)
+                      .flatMap(info -> info.getter().get(key))
+-                     .<DataResult<E>>map(DataResult::success)
++                .map(DataResult::success) // Pencil - decompile error
+                      .orElseGet(() -> DataResult.error(() -> "Can't find value: " + key))
+                   : DataResult.error(() -> "Not a registry ops")
+          )
+diff --git a/src/main/java/net/minecraft/server/level/ServerLevel.java b/src/main/java/net/minecraft/server/level/ServerLevel.java
+index 36cbb10..6e8b9e6 100644
+--- a/src/main/java/net/minecraft/server/level/ServerLevel.java
++++ b/src/main/java/net/minecraft/server/level/ServerLevel.java
+@@ -19,14 +19,7 @@ import java.io.IOException;
+ import java.io.Writer;
+ import java.nio.file.Files;
+ import java.nio.file.Path;
+-import java.util.ArrayList;
+-import java.util.Comparator;
+-import java.util.List;
+-import java.util.Locale;
+-import java.util.Objects;
+-import java.util.Optional;
+-import java.util.Set;
+-import java.util.UUID;
++import java.util.*;
+ import java.util.concurrent.Executor;
+ import java.util.function.BooleanSupplier;
+ import java.util.function.Function;
+@@ -1563,19 +1556,23 @@ public class ServerLevel extends Level implements WorldGenLevel {
+ 
+    private static <T> String getTypeCount(Iterable<T> items, Function<T, String> classifier) {
+       try {
+-         Object2IntOpenHashMap<String> object2IntOpenHashMap = new Object2IntOpenHashMap();
++         // Pencil start - decompile error
++         Object2IntOpenHashMap<String> object2intopenhashmap = new Object2IntOpenHashMap();
++         Iterator<T> iterator = items.iterator();
+ 
+-         for (T object : items) {
+-            String string = classifier.apply(object);
+-            object2IntOpenHashMap.addTo(string, 1);
++         while (iterator.hasNext()) {
++            T t0 = iterator.next();
++            String s = (String) classifier.apply(t0);
++
++            object2intopenhashmap.addTo(s, 1);
+          }
+ 
+-         return object2IntOpenHashMap.object2IntEntrySet()
+-            .stream()
+-            .sorted(Comparator.comparing(Entry::getIntValue).reversed())
+-            .limit(5L)
+-            .map(entry -> (String)entry.getKey() + ":" + entry.getIntValue())
+-            .collect(Collectors.joining(","));
++         return (String) object2intopenhashmap.object2IntEntrySet().stream().sorted(Comparator.comparing(Entry<String>::getIntValue).reversed()).limit(5L).map((entry) -> {
++            String s1 = (String) entry.getKey();
++
++            return s1 + ":" + entry.getIntValue();
++         }).collect(Collectors.joining(","));
++         // Pencil end
+       } catch (Exception var6) {
+          return "";
+       }
+diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
+index 781025d..2becb4f 100644
+--- a/src/main/java/net/minecraft/world/entity/Entity.java
++++ b/src/main/java/net/minecraft/world/entity/Entity.java
+@@ -479,7 +479,7 @@ public abstract class Entity implements SyncedDataHolder, Nameable, EntityAccess
+ 
+       this.firstTick = false;
+       if (!this.level().isClientSide && this instanceof Leashable) {
+-         Leashable.tickLeash((Entity)((Leashable)this));
++         Leashable.tickLeash((Entity & Leashable) this); // Pencil - decompile error
+       }
+ 
+       this.level().getProfiler().pop();
+diff --git a/src/main/java/net/minecraft/world/entity/Leashable.java b/src/main/java/net/minecraft/world/entity/Leashable.java
+index d80a1aa..11bcc97 100644
+--- a/src/main/java/net/minecraft/world/entity/Leashable.java
++++ b/src/main/java/net/minecraft/world/entity/Leashable.java
+@@ -41,7 +41,7 @@ public interface Leashable {
+ 
+    default void setDelayedLeashHolderId(int unresolvedLeashHolderId) {
+       this.setLeashData(new Leashable.LeashData(unresolvedLeashHolderId));
+-      dropLeash((Entity)this, false, false);
++      Leashable.dropLeash((Entity & Leashable) this, false, false); // Pencil - decompile error
+    }
+ 
+    @Nullable
+@@ -102,7 +102,7 @@ public interface Leashable {
+    }
+ 
+    default void dropLeash(boolean sendPacket, boolean dropItem) {
+-      dropLeash((Entity)this, sendPacket, dropItem);
++      Leashable.dropLeash((Entity & Leashable) this, sendPacket, dropItem); // Pencil - decompile error
+    }
+ 
+    private static <E extends Entity & Leashable> void dropLeash(E entity, boolean sendPacket, boolean dropItem) {
+@@ -161,7 +161,7 @@ public interface Leashable {
+    }
+ 
+    default void elasticRangeLeashBehaviour(Entity leashHolder, float distance) {
+-      legacyElasticRangeLeashBehaviour((Entity)this, leashHolder, distance);
++      Leashable.legacyElasticRangeLeashBehaviour((Entity & Leashable) this, leashHolder, distance); // Pencil - decompile error
+    }
+ 
+    private static <E extends Entity & Leashable> void legacyElasticRangeLeashBehaviour(E entity, Entity leashHolder, float distance) {
+@@ -172,7 +172,7 @@ public interface Leashable {
+    }
+ 
+    default void setLeashedTo(Entity leashHolder, boolean sendPacket) {
+-      setLeashedTo((Entity)this, leashHolder, sendPacket);
++      Leashable.setLeashedTo((Entity & Leashable) this, leashHolder, sendPacket); // Pencil - decompile error
+    }
+ 
+    private static <E extends Entity & Leashable> void setLeashedTo(E entity, Entity leashHolder, boolean sendPacket) {
+@@ -195,7 +195,7 @@ public interface Leashable {
+ 
+    @Nullable
+    default Entity getLeashHolder() {
+-      return getLeashHolder((Entity)this);
++      return Leashable.getLeashHolder((Entity & Leashable) this); // Pencil - decompile error
+    }
+ 
+    @Nullable
+diff --git a/src/main/java/net/minecraft/world/entity/animal/Sheep.java b/src/main/java/net/minecraft/world/entity/animal/Sheep.java
+index 16b8e1d..e62473a 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/Sheep.java
++++ b/src/main/java/net/minecraft/world/entity/animal/Sheep.java
+@@ -80,9 +80,11 @@ public class Sheep extends Animal implements Shearable {
+       map.put(DyeColor.RED, Blocks.RED_WOOL);
+       map.put(DyeColor.BLACK, Blocks.BLACK_WOOL);
+    });
+-   private static final Map<DyeColor, Integer> COLOR_BY_DYE = Maps.newEnumMap(
+-      Arrays.stream(DyeColor.values()).collect(Collectors.toMap(color -> (DyeColor)color, Sheep::createSheepColor))
+-   );
++   // Pencil start - decompile error
++   private static final Map<DyeColor, Integer> COLOR_BY_DYE = Maps.newEnumMap((Map) Arrays.stream(DyeColor.values()).collect(Collectors.toMap((enumcolor) -> {
++      return enumcolor;
++   }, Sheep::createSheepColor)));
++   // Pencil end
+    private int eatAnimationTick;
+    private EatBlockGoal eatBlockGoal;
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java b/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java
+index 4524bc2..49090b3 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java
++++ b/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java
+@@ -71,30 +71,29 @@ public class Axolotl extends Animal implements LerpingModel, VariantHolder<Axolo
+    protected static final ImmutableList<? extends SensorType<? extends Sensor<? super Axolotl>>> SENSOR_TYPES = ImmutableList.of(
+       SensorType.NEAREST_LIVING_ENTITIES, SensorType.NEAREST_ADULT, SensorType.HURT_BY, SensorType.AXOLOTL_ATTACKABLES, SensorType.AXOLOTL_TEMPTATIONS
+    );
+-   protected static final ImmutableList<? extends MemoryModuleType<?>> MEMORY_TYPES = ImmutableList.of(
+-      MemoryModuleType.BREED_TARGET,
+-      MemoryModuleType.NEAREST_LIVING_ENTITIES,
+-      MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES,
+-      MemoryModuleType.NEAREST_VISIBLE_PLAYER,
+-      MemoryModuleType.NEAREST_VISIBLE_ATTACKABLE_PLAYER,
+-      MemoryModuleType.LOOK_TARGET,
+-      MemoryModuleType.WALK_TARGET,
+-      MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE,
+-      MemoryModuleType.PATH,
+-      MemoryModuleType.ATTACK_TARGET,
+-      MemoryModuleType.ATTACK_COOLING_DOWN,
+-      MemoryModuleType.NEAREST_VISIBLE_ADULT,
+-      new MemoryModuleType[]{
+-         MemoryModuleType.HURT_BY_ENTITY,
+-         MemoryModuleType.PLAY_DEAD_TICKS,
+-         MemoryModuleType.NEAREST_ATTACKABLE,
+-         MemoryModuleType.TEMPTING_PLAYER,
+-         MemoryModuleType.TEMPTATION_COOLDOWN_TICKS,
+-         MemoryModuleType.IS_TEMPTED,
+-         MemoryModuleType.HAS_HUNTING_COOLDOWN,
+-         MemoryModuleType.IS_PANICKING
+-      }
+-   );
++   // Pencil start - decompile error
++   public static final ImmutableList<? extends MemoryModuleType<?>> MEMORY_TYPES = ImmutableList.<MemoryModuleType<?>>of(MemoryModuleType.BREED_TARGET,
++       MemoryModuleType.NEAREST_LIVING_ENTITIES,
++       MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES,
++       MemoryModuleType.NEAREST_VISIBLE_PLAYER,
++       MemoryModuleType.NEAREST_VISIBLE_ATTACKABLE_PLAYER,
++       MemoryModuleType.LOOK_TARGET,
++       MemoryModuleType.WALK_TARGET,
++       MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE,
++       MemoryModuleType.PATH,
++       MemoryModuleType.ATTACK_TARGET,
++       MemoryModuleType.ATTACK_COOLING_DOWN,
++       MemoryModuleType.NEAREST_VISIBLE_ADULT,
++       new MemoryModuleType[]{MemoryModuleType.HURT_BY_ENTITY,
++           MemoryModuleType.PLAY_DEAD_TICKS,
++           MemoryModuleType.NEAREST_ATTACKABLE,
++           MemoryModuleType.TEMPTING_PLAYER,
++           MemoryModuleType.TEMPTATION_COOLDOWN_TICKS,
++           MemoryModuleType.IS_TEMPTED,
++           MemoryModuleType.HAS_HUNTING_COOLDOWN,
++           MemoryModuleType.IS_PANICKING
++       });
++   // Pencil end
+    private static final EntityDataAccessor<Integer> DATA_VARIANT = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> DATA_PLAYING_DEAD = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> FROM_BUCKET = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.BOOLEAN);
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Zoglin.java b/src/main/java/net/minecraft/world/entity/monster/Zoglin.java
+index bb5b311..addae1c 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Zoglin.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Zoglin.java
+@@ -107,7 +107,7 @@ public class Zoglin extends Monster implements Enemy, HoglinBase {
+          ImmutableList.of(
+             StartAttacking.create(Zoglin::findNearestValidAttackTarget),
+             SetEntityLookTargetSometimes.create(8.0F, UniformInt.of(30, 60)),
+-            new RunOne(
++            new RunOne<>( // Pencil - decompile error
+                ImmutableList.of(
+                   Pair.of(RandomStroll.stroll(0.4F), 2), Pair.of(SetWalkTargetFromLookTarget.create(0.4F, 3), 2), Pair.of(new DoNothing(30, 60), 1)
+                )
+diff --git a/src/main/java/net/minecraft/world/entity/monster/hoglin/Hoglin.java b/src/main/java/net/minecraft/world/entity/monster/hoglin/Hoglin.java
+index c70d179..4e35d35 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/hoglin/Hoglin.java
++++ b/src/main/java/net/minecraft/world/entity/monster/hoglin/Hoglin.java
+@@ -75,7 +75,7 @@ public class Hoglin extends Animal implements Enemy, HoglinBase {
+       MemoryModuleType.ATTACK_TARGET,
+       MemoryModuleType.ATTACK_COOLING_DOWN,
+       MemoryModuleType.NEAREST_VISIBLE_ADULT_PIGLIN,
+-      new MemoryModuleType[]{
++         // Pencil - decompile error
+          MemoryModuleType.AVOID_TARGET,
+          MemoryModuleType.VISIBLE_ADULT_PIGLIN_COUNT,
+          MemoryModuleType.VISIBLE_ADULT_HOGLIN_COUNT,
+@@ -84,7 +84,7 @@ public class Hoglin extends Animal implements Enemy, HoglinBase {
+          MemoryModuleType.NEAREST_REPELLENT,
+          MemoryModuleType.PACIFIED,
+          MemoryModuleType.IS_PANICKING
+-      }
++       // Pencil - decompile error
+    );
+ 
+    public Hoglin(EntityType<? extends Hoglin> type, Level world) {
+diff --git a/src/main/java/net/minecraft/world/entity/npc/Villager.java b/src/main/java/net/minecraft/world/entity/npc/Villager.java
+index 8900a36..b3a59ab 100644
+--- a/src/main/java/net/minecraft/world/entity/npc/Villager.java
++++ b/src/main/java/net/minecraft/world/entity/npc/Villager.java
+@@ -172,16 +172,17 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
+       SensorType.SECONDARY_POIS,
+       SensorType.GOLEM_DETECTED
+    );
+-   public static final Map<MemoryModuleType<GlobalPos>, BiPredicate<Villager, Holder<PoiType>>> POI_MEMORIES = ImmutableMap.of(
+-      MemoryModuleType.HOME,
+-      (BiPredicate<Villager, Holder>)(villager, holder) -> holder.is(PoiTypes.HOME),
+-      MemoryModuleType.JOB_SITE,
+-      (BiPredicate<Villager, Holder>)(villager, holder) -> villager.getVillagerData().getProfession().heldJobSite().test(holder),
+-      MemoryModuleType.POTENTIAL_JOB_SITE,
+-      (BiPredicate<Villager, Holder>)(villager, holder) -> VillagerProfession.ALL_ACQUIRABLE_JOBS.test(holder),
+-      MemoryModuleType.MEETING_POINT,
+-      (BiPredicate<Villager, Holder>)(villager, holder) -> holder.is(PoiTypes.MEETING)
+-   );
++   // Pencil start - decomile error
++   public static final Map<MemoryModuleType<GlobalPos>, BiPredicate<Villager, Holder<PoiType>>> POI_MEMORIES = ImmutableMap.of(MemoryModuleType.HOME, (entityvillager, holder) -> {
++      return holder.is(PoiTypes.HOME);
++   }, MemoryModuleType.JOB_SITE, (entityvillager, holder) -> {
++      return entityvillager.getVillagerData().getProfession().heldJobSite().test(holder);
++   }, MemoryModuleType.POTENTIAL_JOB_SITE, (entityvillager, holder) -> {
++      return VillagerProfession.ALL_ACQUIRABLE_JOBS.test(holder);
++   }, MemoryModuleType.MEETING_POINT, (entityvillager, holder) -> {
++      return holder.is(PoiTypes.MEETING);
++   });
++   // Pencil end
+ 
+    public Villager(EntityType<? extends Villager> entityType, Level world) {
+       this(entityType, world, VillagerType.PLAINS);
+diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
+index 5db9a44..0081156 100644
+--- a/src/main/java/net/minecraft/world/entity/player/Player.java
++++ b/src/main/java/net/minecraft/world/entity/player/Player.java
+@@ -133,20 +133,42 @@ public abstract class Player extends LivingEntity {
+    public static final EntityDimensions STANDING_DIMENSIONS = EntityDimensions.scalable(0.6F, 1.8F)
+       .withEyeHeight(1.62F)
+       .withAttachments(EntityAttachments.builder().attach(EntityAttachment.VEHICLE, DEFAULT_VEHICLE_ATTACHMENT));
+-   private static final Map<Pose, EntityDimensions> POSES = ImmutableMap.builder()
+-      .put(Pose.STANDING, STANDING_DIMENSIONS)
+-      .put(Pose.SLEEPING, SLEEPING_DIMENSIONS)
+-      .put(Pose.FALL_FLYING, EntityDimensions.scalable(0.6F, 0.6F).withEyeHeight(0.4F))
+-      .put(Pose.SWIMMING, EntityDimensions.scalable(0.6F, 0.6F).withEyeHeight(0.4F))
+-      .put(Pose.SPIN_ATTACK, EntityDimensions.scalable(0.6F, 0.6F).withEyeHeight(0.4F))
+-      .put(
+-         Pose.CROUCHING,
+-         EntityDimensions.scalable(0.6F, 1.5F)
+-            .withEyeHeight(1.27F)
+-            .withAttachments(EntityAttachments.builder().attach(EntityAttachment.VEHICLE, DEFAULT_VEHICLE_ATTACHMENT))
+-      )
+-      .put(Pose.DYING, EntityDimensions.fixed(0.2F, 0.2F).withEyeHeight(1.62F))
+-      .build();
++   // Pencil start - decompile error
++   private static final Map<Pose, EntityDimensions> POSES = ImmutableMap.<Pose, EntityDimensions>builder().put(
++       Pose.STANDING,
++       Player.STANDING_DIMENSIONS
++   ).put(
++       Pose.SLEEPING,
++       Player.SLEEPING_DIMENSIONS
++   ).put(
++       Pose.FALL_FLYING,
++       EntityDimensions.scalable(0.6F, 0.6F)
++           .withEyeHeight(0.4F)
++   ).put(
++       Pose.SWIMMING,
++       EntityDimensions.scalable(0.6F, 0.6F)
++           .withEyeHeight(0.4F)
++   ).put(
++       Pose.SPIN_ATTACK,
++       EntityDimensions.scalable(0.6F, 0.6F)
++           .withEyeHeight(0.4F)
++   ).put(
++       Pose.CROUCHING,
++       EntityDimensions.scalable(0.6F, 1.5F)
++           .withEyeHeight(1.27F)
++           .withAttachments(
++               EntityAttachments.builder()
++                   .attach(
++                       EntityAttachment.VEHICLE,
++                       Player.DEFAULT_VEHICLE_ATTACHMENT
++                   )
++           )
++   ).put(
++       Pose.DYING,
++       EntityDimensions.fixed(0.2F, 0.2F)
++           .withEyeHeight(1.62F)
++   ).build();
++   // Pencil end
+    private static final EntityDataAccessor<Float> DATA_PLAYER_ABSORPTION_ID = SynchedEntityData.defineId(Player.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> DATA_SCORE_ID = SynchedEntityData.defineId(Player.class, EntityDataSerializers.INT);
+    protected static final EntityDataAccessor<Byte> DATA_PLAYER_MODE_CUSTOMISATION = SynchedEntityData.defineId(Player.class, EntityDataSerializers.BYTE);
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java b/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
+index b0c7dbb..1dc7171 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
+@@ -558,12 +558,37 @@ public abstract class AbstractArrow extends Projectile {
+    @Override
+    public void setOwner(@Nullable Entity entity) {
+       super.setOwner(entity);
++      Entity entity1 = entity;
++      byte b0 = 0;
+ 
+-      this.pickup = switch (entity) {
+-         case null, default -> this.pickup;
+-         case Player player when this.pickup == AbstractArrow.Pickup.DISALLOWED -> AbstractArrow.Pickup.ALLOWED;
+-         case OminousItemSpawner ominousItemSpawner -> AbstractArrow.Pickup.DISALLOWED;
+-      };
++      AbstractArrow.Pickup entityarrow_pickupstatus = this.pickup; // Pencil - decompile error
++
++      label16:
++      // Pencil start - decompile error
++      while (true) {
++         switch (entity1) {
++            case Player entityhuman:
++
++               if (this.pickup != AbstractArrow.Pickup.DISALLOWED) {
++                  b0 = 1;
++                  break label16;
++               }
++
++               entityarrow_pickupstatus = AbstractArrow.Pickup.ALLOWED;
++               break label16;
++            case OminousItemSpawner ominousitemspawner:
++
++               entityarrow_pickupstatus = AbstractArrow.Pickup.DISALLOWED;
++               break label16;
++            case null:
++            default:
++               entityarrow_pickupstatus = this.pickup;
++               break label16;
++         }
++         // Pencil end
++      }
++
++      this.pickup = entityarrow_pickupstatus;
+    }
+ 
+    @Override
+diff --git a/src/main/java/net/minecraft/world/level/biome/Climate.java b/src/main/java/net/minecraft/world/level/biome/Climate.java
+index dc368f3..2586170 100644
+--- a/src/main/java/net/minecraft/world/level/biome/Climate.java
++++ b/src/main/java/net/minecraft/world/level/biome/Climate.java
+@@ -149,7 +149,7 @@ public class Climate {
+ 
+       public static <T> Codec<Climate.ParameterList<T>> codec(MapCodec<T> entryCodec) {
+          return ExtraCodecs.nonEmptyList(
+-               RecordCodecBuilder.create(
++                 RecordCodecBuilder.<Pair<Climate.ParameterPoint, T>>create( // Pencil - decompile error
+                      instance -> instance.group(
+                               Climate.ParameterPoint.CODEC.fieldOf("parameters").forGetter(Pair::getFirst), entryCodec.forGetter(Pair::getSecond)
+                            )
+diff --git a/src/main/java/net/minecraft/world/level/biome/MobSpawnSettings.java b/src/main/java/net/minecraft/world/level/biome/MobSpawnSettings.java
+index 5224ec1..29b7314 100644
+--- a/src/main/java/net/minecraft/world/level/biome/MobSpawnSettings.java
++++ b/src/main/java/net/minecraft/world/level/biome/MobSpawnSettings.java
+@@ -115,7 +115,7 @@ public class MobSpawnSettings {
+    }
+ 
+    public static class SpawnerData extends WeightedEntry.IntrusiveBase {
+-      public static final Codec<MobSpawnSettings.SpawnerData> CODEC = RecordCodecBuilder.create(
++      public static final Codec<MobSpawnSettings.SpawnerData> CODEC = RecordCodecBuilder.<MobSpawnSettings.SpawnerData>create( // Pencil - decompile error
+             instance -> instance.group(
+                      BuiltInRegistries.ENTITY_TYPE.byNameCodec().fieldOf("type").forGetter(spawnEntry -> spawnEntry.type),
+                      Weight.CODEC.fieldOf("weight").forGetter(WeightedEntry.IntrusiveBase::getWeight),
+diff --git a/src/main/java/net/minecraft/world/level/block/state/properties/Property.java b/src/main/java/net/minecraft/world/level/block/state/properties/Property.java
+index df9c2ac..4fdbe6b 100644
+--- a/src/main/java/net/minecraft/world/level/block/state/properties/Property.java
++++ b/src/main/java/net/minecraft/world/level/block/state/properties/Property.java
+@@ -16,12 +16,14 @@ public abstract class Property<T extends Comparable<T>> {
+    @Nullable
+    private Integer hashCode;
+    private final Codec<T> codec = Codec.STRING
+-      .comapFlatMap(
+-         value -> this.getValue(value)
+-               .<DataResult>map(DataResult::success)
++   // Pencil start - decompile error
++       .comapFlatMap(
++           value -> this.getValue(value)
++               .map(DataResult::success)
+                .orElseGet(() -> DataResult.error(() -> "Unable to read property: " + this + " with value: " + value)),
+-         this::getName
+-      );
++           this::getName
++       );
++   // Pencil end - decompile error
+    private final Codec<Property.Value<T>> valueCodec = this.codec.xmap(this::value, Property.Value::value);
+ 
+    protected Property(String name, Class<T> type) {
+diff --git a/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java b/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java
+index 9db8c38..ed1d9c7 100644
+--- a/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java
++++ b/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java
+@@ -53,7 +53,7 @@ public class EntityPositionSource implements PositionSource {
+    }
+ 
+    private void resolveEntity(Level world) {
+-      ((Optional)this.entityOrUuidOrId
++      (this.entityOrUuidOrId // Pencil - decompile error
+             .map(
+                Optional::of,
+                entityId -> Optional.ofNullable(
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java b/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java
+index c808b58..def65d6 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/blending/BlendingData.java
+@@ -67,7 +67,7 @@ public class BlendingData {
+    private final List<List<Holder<Biome>>> biomes;
+    private final transient double[][] densities;
+    private static final Codec<double[]> DOUBLE_ARRAY_CODEC = Codec.DOUBLE.listOf().xmap(Doubles::toArray, Doubles::asList);
+-   public static final Codec<BlendingData> CODEC = RecordCodecBuilder.create(
++   public static final Codec<BlendingData> CODEC = RecordCodecBuilder.<BlendingData>create( // Pencil - decompile error
+          instance -> instance.group(
+                   Codec.INT.fieldOf("min_section").forGetter(blendingData -> blendingData.areaWithOldGeneration.getMinSection()),
+                   Codec.INT.fieldOf("max_section").forGetter(blendingData -> blendingData.areaWithOldGeneration.getMaxSection()),
+-- 
+2.34.1
+
