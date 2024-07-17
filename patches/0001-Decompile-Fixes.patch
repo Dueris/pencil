@@ -1,6 +1,6 @@
-From 506407e07be584b7143588fb1a9666493f1558b7 Mon Sep 17 00:00:00 2001
+From 9d0dc3cc2f3e3b0ddc63e285387d5b44b5dd9c8a Mon Sep 17 00:00:00 2001
 From: dueris <jedimastertoothless@hotmail.com>
-Date: Wed, 17 Jul 2024 10:45:15 -0700
+Date: Wed, 17 Jul 2024 14:47:08 -0700
 Subject: [PATCH] Decompile Fixes
 
 ---
@@ -24,8 +24,15 @@ Subject: [PATCH] Decompile Fixes
  .../core/component/DataComponentPatch.java    |   2 +-
  .../core/component/DataComponentType.java     |   2 +-
  .../core/component/TypedDataComponent.java    |   4 +-
+ .../core/registries/BuiltInRegistries.java    |   2 +-
  .../data/info/RegistryDumpReport.java         |   2 +-
+ .../data/models/BlockModelGenerators.java     |   6 +-
+ .../data/models/blockstates/Selector.java     |   4 +-
+ .../data/models/model/ModelTemplate.java      |   3 +-
+ .../data/recipes/RecipeProvider.java          |   2 +-
  .../minecraft/data/tags/ItemTagsProvider.java |   2 +-
+ .../worldgen/TrialChambersStructurePools.java |   2 +-
+ .../placement/VegetationPlacements.java       |   2 +-
  src/main/java/net/minecraft/nbt/NbtOps.java   | 111 ++++++++++++++----
  .../java/net/minecraft/nbt/TagParser.java     |   6 +-
  .../network/chat/LastSeenMessages.java        |   2 +-
@@ -35,8 +42,12 @@ Subject: [PATCH] Decompile Fixes
  .../common/custom/CustomPacketPayload.java    |   2 +-
  ...lientboundUpdateEnabledFeaturesPacket.java |   2 +-
  .../network/syncher/EntityDataSerializer.java |   2 +-
+ .../minecraft/resources/HolderSetCodec.java   |  13 +-
  .../net/minecraft/resources/RegistryOps.java  |   2 +-
  .../net/minecraft/server/MinecraftServer.java |   2 +-
+ .../server/commands/ReturnCommand.java        |  15 ++-
+ .../dedicated/DedicatedServerProperties.java  |  18 +--
+ .../minecraft/server/dedicated/Settings.java  |   2 +-
  .../server/level/ChunkTaskPriorityQueue.java  |  16 ++-
  .../server/level/DistanceManager.java         |  17 +--
  .../server/level/ServerChunkCache.java        |   2 +-
@@ -44,6 +55,7 @@ Subject: [PATCH] Decompile Fixes
  .../minecraft/server/level/ServerPlayer.java  |  19 +--
  .../server/level/TickingTracker.java          |  15 ++-
  .../network/ServerGamePacketListenerImpl.java |   6 +-
+ .../server/players/OldUsersConverter.java     |   4 +-
  .../java/net/minecraft/util/CubicSpline.java  |  20 ++--
  .../java/net/minecraft/util/ExtraCodecs.java  |  39 +++---
  .../util/LowerCaseEnumTypeAdapterFactory.java |   2 +-
@@ -118,46 +130,69 @@ Subject: [PATCH] Decompile Fixes
  .../util/valueproviders/UniformInt.java       |   2 +-
  .../net/minecraft/world/entity/Entity.java    |   2 +-
  .../net/minecraft/world/entity/Leashable.java |  10 +-
+ .../world/entity/SpawnPlacements.java         |   2 +-
  .../net/minecraft/world/entity/ai/Brain.java  |  25 ++--
+ .../ai/attributes/DefaultAttributes.java      |   2 +-
+ .../entity/ai/behavior/InteractWith.java      |   2 +-
+ .../behavior/declarative/BehaviorBuilder.java |  44 ++-----
  .../entity/ai/gossip/GossipContainer.java     |   2 +-
  .../ai/sensing/VillagerHostilesSensor.java    |   2 +-
  .../entity/ai/village/poi/PoiManager.java     |   2 +-
  .../entity/ai/village/poi/PoiSection.java     |  16 +--
  .../minecraft/world/entity/animal/Sheep.java  |   8 +-
+ .../world/entity/animal/allay/AllayAi.java    |   4 +-
  .../world/entity/animal/axolotl/Axolotl.java  |  47 ++++----
+ .../world/entity/animal/frog/FrogAi.java      |   2 +-
+ .../world/entity/animal/frog/TadpoleAi.java   |   2 +-
+ .../world/entity/animal/goat/GoatAi.java      |   2 +-
  .../world/entity/monster/Zoglin.java          |   2 +-
  .../world/entity/monster/hoglin/Hoglin.java   |   4 +-
+ .../world/entity/monster/piglin/PiglinAi.java |   8 +-
+ .../monster/piglin/StartHuntingHoglin.java    |   4 +-
  .../monster/warden/AngerManagement.java       |   6 +-
+ .../world/entity/monster/warden/WardenAi.java |   6 +-
  .../minecraft/world/entity/npc/Villager.java  |  21 ++--
  .../world/entity/npc/VillagerTrades.java      |  20 ++--
  .../minecraft/world/entity/player/Player.java |  50 +++++---
  .../entity/projectile/AbstractArrow.java      |  35 +++++-
+ .../world/item/AdventureModePredicate.java    |   2 +-
+ .../minecraft/world/item/HoneycombItem.java   |   2 +-
+ .../world/item/component/DebugStickState.java |   2 +-
  .../world/item/crafting/RecipeManager.java    |   2 +-
  .../item/enchantment/ConditionalEffect.java   |   2 +-
  .../item/enchantment/LevelBasedValue.java     |   2 +-
+ .../effects/SpawnParticlesEffect.java         |   2 +-
  .../net/minecraft/world/level/GameRules.java  |   4 +-
  .../minecraft/world/level/biome/Climate.java  |   2 +-
  .../world/level/biome/MobSpawnSettings.java   |   2 +-
  .../MultiNoiseBiomeSourceParameterList.java   |   2 +-
+ .../world/level/block/BaseEntityBlock.java    |   2 +-
  .../world/level/block/SculkSpreader.java      |  26 ++--
+ .../world/level/block/WeatheringCopper.java   |   2 +-
  .../level/block/entity/SkullBlockEntity.java  |   2 +-
  .../level/block/entity/vault/VaultConfig.java |  28 +++--
  .../level/block/state/StateDefinition.java    |  23 ++--
  .../block/state/properties/Property.java      |  12 +-
  .../world/level/chunk/PalettedContainer.java  |   8 +-
+ .../level/chunk/storage/ChunkSerializer.java  |  25 ++--
  .../level/gameevent/EntityPositionSource.java |   2 +-
  .../world/level/levelgen/NoiseSettings.java   |   2 +-
  .../world/level/levelgen/SurfaceRules.java    |  52 ++++----
  .../level/levelgen/blending/BlendingData.java |   2 +-
  .../flat/FlatLevelGeneratorSettings.java      |   2 +-
  .../level/levelgen/presets/WorldPreset.java   |   2 +-
+ .../level/levelgen/presets/WorldPresets.java  |   2 +-
  .../levelgen/structure/StructurePiece.java    |   2 +-
  .../structure/pieces/PiecesContainer.java     |   2 +-
  .../RandomSpreadStructurePlacement.java       |  22 ++--
  .../structure/structures/JigsawStructure.java |  12 +-
+ .../structures/OceanMonumentPieces.java       |   2 +-
  .../level/storage/loot/ValidationContext.java |   2 +-
+ .../storage/loot/functions/ListOperation.java |   2 +-
+ .../loot/functions/SetAttributesFunction.java |   2 +-
+ .../LootItemBlockStatePropertyCondition.java  |   4 +-
  .../minecraft/world/scores/Scoreboard.java    |  39 +++---
- 153 files changed, 762 insertions(+), 576 deletions(-)
+ 188 files changed, 856 insertions(+), 682 deletions(-)
 
 diff --git a/src/main/java/net/minecraft/Util.java b/src/main/java/net/minecraft/Util.java
 index 013c26e..da51490 100644
@@ -526,6 +561,19 @@ index bb02223..4579dd1 100644
        }
  
        private static <T> void encodeCap(RegistryFriendlyByteBuf buf, TypedDataComponent<T> component) {
+diff --git a/src/main/java/net/minecraft/core/registries/BuiltInRegistries.java b/src/main/java/net/minecraft/core/registries/BuiltInRegistries.java
+index 97bb39e..4163e51 100644
+--- a/src/main/java/net/minecraft/core/registries/BuiltInRegistries.java
++++ b/src/main/java/net/minecraft/core/registries/BuiltInRegistries.java
+@@ -313,7 +313,7 @@ public class BuiltInRegistries {
+       Bootstrap.checkBootstrapCalled(() -> "registry " + key);
+       ResourceLocation resourceLocation = key.location();
+       LOADERS.put(resourceLocation, () -> initializer.run(registry));
+-      WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)key, registry, RegistrationInfo.BUILT_IN);
++      WRITABLE_REGISTRY.register((ResourceKey)key, registry, RegistrationInfo.BUILT_IN); // Pencil - decompile fix
+       return registry;
+    }
+ 
 diff --git a/src/main/java/net/minecraft/data/info/RegistryDumpReport.java b/src/main/java/net/minecraft/data/info/RegistryDumpReport.java
 index e0ed360..fb04562 100644
 --- a/src/main/java/net/minecraft/data/info/RegistryDumpReport.java
@@ -539,6 +587,79 @@ index e0ed360..fb04562 100644
        jsonObject.addProperty("protocol_id", i);
        JsonObject jsonObject2 = new JsonObject();
        registry.holders().forEach(entry -> {
+diff --git a/src/main/java/net/minecraft/data/models/BlockModelGenerators.java b/src/main/java/net/minecraft/data/models/BlockModelGenerators.java
+index 5826d11..d92628d 100644
+--- a/src/main/java/net/minecraft/data/models/BlockModelGenerators.java
++++ b/src/main/java/net/minecraft/data/models/BlockModelGenerators.java
+@@ -79,12 +79,12 @@ public class BlockModelGenerators {
+    final BiConsumer<ResourceLocation, Supplier<JsonElement>> modelOutput;
+    private final Consumer<Item> skippedAutoModelsOutput;
+    final List<Block> nonOrientableTrapdoor = ImmutableList.of(Blocks.OAK_TRAPDOOR, Blocks.DARK_OAK_TRAPDOOR, Blocks.IRON_TRAPDOOR);
+-   final Map<Block, BlockModelGenerators.BlockStateGeneratorSupplier> fullBlockModelCustomGenerators = ImmutableMap.builder()
++   final Map<Block, BlockModelGenerators.BlockStateGeneratorSupplier> fullBlockModelCustomGenerators = ImmutableMap.<Block, BlockModelGenerators.BlockStateGeneratorSupplier>builder() // Pencil - decompile fix
+       .put(Blocks.STONE, BlockModelGenerators::createMirroredCubeGenerator)
+       .put(Blocks.DEEPSLATE, BlockModelGenerators::createMirroredColumnGenerator)
+       .put(Blocks.MUD_BRICKS, BlockModelGenerators::createNorthWestMirroredCubeGenerator)
+       .build();
+-   final Map<Block, TexturedModel> texturedModels = ImmutableMap.builder()
++   final Map<Block, TexturedModel> texturedModels = ImmutableMap.<Block, TexturedModel>builder() // Pencil - decompile fix
+       .put(Blocks.SANDSTONE, TexturedModel.TOP_BOTTOM_WITH_WALL.get(Blocks.SANDSTONE))
+       .put(Blocks.RED_SANDSTONE, TexturedModel.TOP_BOTTOM_WITH_WALL.get(Blocks.RED_SANDSTONE))
+       .put(Blocks.SMOOTH_SANDSTONE, TexturedModel.createAllSame(TextureMapping.getBlockTexture(Blocks.SANDSTONE, "_top")))
+@@ -122,7 +122,7 @@ public class BlockModelGenerators {
+       .put(Blocks.CHISELED_TUFF_BRICKS, TexturedModel.COLUMN_WITH_WALL.get(Blocks.CHISELED_TUFF_BRICKS))
+       .put(Blocks.CHISELED_TUFF, TexturedModel.COLUMN_WITH_WALL.get(Blocks.CHISELED_TUFF))
+       .build();
+-   static final Map<BlockFamily.Variant, BiConsumer<BlockModelGenerators.BlockFamilyProvider, Block>> SHAPE_CONSUMERS = ImmutableMap.builder()
++   static final Map<BlockFamily.Variant, BiConsumer<BlockModelGenerators.BlockFamilyProvider, Block>> SHAPE_CONSUMERS = ImmutableMap.<BlockFamily.Variant, BiConsumer<BlockModelGenerators.BlockFamilyProvider, Block>>builder() // Pencil - decompile fix
+       .put(BlockFamily.Variant.BUTTON, BlockModelGenerators.BlockFamilyProvider::button)
+       .put(BlockFamily.Variant.DOOR, BlockModelGenerators.BlockFamilyProvider::door)
+       .put(BlockFamily.Variant.CHISELED, BlockModelGenerators.BlockFamilyProvider::fullBlockVariant)
+diff --git a/src/main/java/net/minecraft/data/models/blockstates/Selector.java b/src/main/java/net/minecraft/data/models/blockstates/Selector.java
+index 634f2f9..651b4f3 100644
+--- a/src/main/java/net/minecraft/data/models/blockstates/Selector.java
++++ b/src/main/java/net/minecraft/data/models/blockstates/Selector.java
+@@ -12,11 +12,11 @@ public final class Selector {
+    private final List<Property.Value<?>> values;
+ 
+    public Selector extend(Property.Value<?> value) {
+-      return new Selector(ImmutableList.builder().addAll(this.values).add(value).build());
++      return new Selector(ImmutableList.<Property.Value<?>>builder().addAll(this.values).add(value).build()); // Pencil - decompile fix
+    }
+ 
+    public Selector extend(Selector propertiesMap) {
+-      return new Selector(ImmutableList.builder().addAll(this.values).addAll(propertiesMap.values).build());
++      return new Selector(ImmutableList.<Property.Value<?>>builder().addAll(this.values).addAll(propertiesMap.values).build()); // Pencil - decompile fix
+    }
+ 
+    private Selector(List<Property.Value<?>> values) {
+diff --git a/src/main/java/net/minecraft/data/models/model/ModelTemplate.java b/src/main/java/net/minecraft/data/models/model/ModelTemplate.java
+index 33dcf1a..9dee27f 100644
+--- a/src/main/java/net/minecraft/data/models/model/ModelTemplate.java
++++ b/src/main/java/net/minecraft/data/models/model/ModelTemplate.java
+@@ -71,8 +71,7 @@ public class ModelTemplate {
+    }
+ 
+    private Map<TextureSlot, ResourceLocation> createMap(TextureMapping textures) {
+-      return Streams.concat(new Stream[]{this.requiredSlots.stream(), textures.getForced()})
+-         .collect(ImmutableMap.toImmutableMap(Function.identity(), textures::get));
++      return Streams.concat(this.requiredSlots.stream(), textures.getForced()).collect(ImmutableMap.toImmutableMap(Function.identity(), textures::get)); // Pencil - decompile fix
+    }
+ 
+    public interface JsonFactory {
+diff --git a/src/main/java/net/minecraft/data/recipes/RecipeProvider.java b/src/main/java/net/minecraft/data/recipes/RecipeProvider.java
+index eeb198e..05c7562 100644
+--- a/src/main/java/net/minecraft/data/recipes/RecipeProvider.java
++++ b/src/main/java/net/minecraft/data/recipes/RecipeProvider.java
+@@ -49,7 +49,7 @@ public abstract class RecipeProvider implements DataProvider {
+    final PackOutput.PathProvider recipePathProvider;
+    final PackOutput.PathProvider advancementPathProvider;
+    private final CompletableFuture<HolderLookup.Provider> registries;
+-   private static final Map<BlockFamily.Variant, BiFunction<ItemLike, ItemLike, RecipeBuilder>> SHAPE_BUILDERS = ImmutableMap.builder()
++   private static final Map<BlockFamily.Variant, BiFunction<ItemLike, ItemLike, RecipeBuilder>> SHAPE_BUILDERS = ImmutableMap.<BlockFamily.Variant, BiFunction<ItemLike, ItemLike, RecipeBuilder>>builder() // Pencil - decompile fix
+       .put(BlockFamily.Variant.BUTTON, (BiFunction<ItemLike, ItemLike, RecipeBuilder>)(output, input) -> buttonBuilder(output, Ingredient.of(input)))
+       .put(
+          BlockFamily.Variant.CHISELED,
 diff --git a/src/main/java/net/minecraft/data/tags/ItemTagsProvider.java b/src/main/java/net/minecraft/data/tags/ItemTagsProvider.java
 index 5332799..cfbd16b 100644
 --- a/src/main/java/net/minecraft/data/tags/ItemTagsProvider.java
@@ -552,6 +673,32 @@ index 5332799..cfbd16b 100644
              optional.orElseThrow(() -> new IllegalStateException("Missing block tag " + itemTag.location())).build().forEach(tagBuilder::add);
           });
           return (HolderLookup.Provider)lookup;
+diff --git a/src/main/java/net/minecraft/data/worldgen/TrialChambersStructurePools.java b/src/main/java/net/minecraft/data/worldgen/TrialChambersStructurePools.java
+index 1c15f83..176b916 100644
+--- a/src/main/java/net/minecraft/data/worldgen/TrialChambersStructurePools.java
++++ b/src/main/java/net/minecraft/data/worldgen/TrialChambersStructurePools.java
+@@ -18,7 +18,7 @@ public class TrialChambersStructurePools {
+    public static final ResourceKey<StructureTemplatePool> START = Pools.createKey("trial_chambers/chamber/end");
+    public static final ResourceKey<StructureTemplatePool> HALLWAY_FALLBACK = Pools.createKey("trial_chambers/hallway/fallback");
+    public static final ResourceKey<StructureTemplatePool> CHAMBER_CAP_FALLBACK = Pools.createKey("trial_chambers/chamber/entrance_cap");
+-   public static final List<PoolAliasBinding> ALIAS_BINDINGS = ImmutableList.builder()
++   public static final List<PoolAliasBinding> ALIAS_BINDINGS = ImmutableList.<PoolAliasBinding>builder() // Pencil - decompile fix
+       .add(
+          PoolAliasBinding.randomGroup(
+             SimpleWeightedRandomList.<List<PoolAliasBinding>>builder()
+diff --git a/src/main/java/net/minecraft/data/worldgen/placement/VegetationPlacements.java b/src/main/java/net/minecraft/data/worldgen/placement/VegetationPlacements.java
+index 322b302..5fa4177 100644
+--- a/src/main/java/net/minecraft/data/worldgen/placement/VegetationPlacements.java
++++ b/src/main/java/net/minecraft/data/worldgen/placement/VegetationPlacements.java
+@@ -130,7 +130,7 @@ public class VegetationPlacements {
+    }
+ 
+    private static Builder<PlacementModifier> treePlacementBase(PlacementModifier countModifier) {
+-      return ImmutableList.builder()
++      return ImmutableList.<PlacementModifier>builder() // Pencil - decompile fix
+          .add(countModifier)
+          .add(InSquarePlacement.spread())
+          .add(TREE_THRESHOLD)
 diff --git a/src/main/java/net/minecraft/nbt/NbtOps.java b/src/main/java/net/minecraft/nbt/NbtOps.java
 index f8f4c3d..eff4ed5 100644
 --- a/src/main/java/net/minecraft/nbt/NbtOps.java
@@ -842,6 +989,37 @@ index f57ffa6..ee56963 100644
     }
  
     public interface ForValueType<T> extends EntityDataSerializer<T> {
+diff --git a/src/main/java/net/minecraft/resources/HolderSetCodec.java b/src/main/java/net/minecraft/resources/HolderSetCodec.java
+index deb2a72..14a6e5c 100644
+--- a/src/main/java/net/minecraft/resources/HolderSetCodec.java
++++ b/src/main/java/net/minecraft/resources/HolderSetCodec.java
+@@ -53,9 +53,14 @@ public class HolderSetCodec<E> implements Codec<HolderSet<E>> {
+                .decode(dynamicOps, object)
+                .flatMap(
+                   pair -> {
+-                     DataResult<HolderSet<E>> dataResult = (DataResult<HolderSet<E>>)((Either)pair.getFirst())
+-                        .map(tag -> lookupTag(holderGetter, tag), entries -> DataResult.success(HolderSet.direct(entries)));
+-                     return dataResult.map(entries -> Pair.of(entries, pair.getSecond()));
++                     // Pencil start - decompile fix
++                     DataResult<HolderSet<E>> dataResult = pair.getFirst()
++                         .map(
++                             tag -> lookupTag(holderGetter, (TagKey<E>)tag),
++                             entries -> DataResult.success(HolderSet.direct((List<? extends Holder<E>>)entries))
++                         );
++                     return dataResult.map(entries -> Pair.of((HolderSet<E>)entries, (T)pair.getSecond()));
++                     // Pencil end
+                   }
+                );
+          }
+@@ -89,7 +94,7 @@ public class HolderSetCodec<E> implements Codec<HolderSet<E>> {
+       return this.elementCodec.listOf().decode(ops, input).flatMap(pair -> {
+          List<Holder.Direct<E>> list = new ArrayList<>();
+ 
+-         for (Holder<E> holder : (List)pair.getFirst()) {
++         for (Holder<E> holder : pair.getFirst()) { // Pencil - decompile fix
+             if (!(holder instanceof Holder.Direct<E> direct)) {
+                return DataResult.error(() -> "Can't decode element " + holder + " without registry");
+             }
 diff --git a/src/main/java/net/minecraft/resources/RegistryOps.java b/src/main/java/net/minecraft/resources/RegistryOps.java
 index 89232a4..4ef4095 100644
 --- a/src/main/java/net/minecraft/resources/RegistryOps.java
@@ -868,6 +1046,85 @@ index 9b30256..77350dc 100644
        this.getProfiler().incrementCounter("runTask");
        super.doRunTask(tickTask);
     }
+diff --git a/src/main/java/net/minecraft/server/commands/ReturnCommand.java b/src/main/java/net/minecraft/server/commands/ReturnCommand.java
+index 94bc17d..f3dce74 100644
+--- a/src/main/java/net/minecraft/server/commands/ReturnCommand.java
++++ b/src/main/java/net/minecraft/server/commands/ReturnCommand.java
+@@ -18,11 +18,16 @@ import net.minecraft.commands.execution.tasks.FallthroughTask;
+ public class ReturnCommand {
+    public static <T extends ExecutionCommandSource<T>> void register(CommandDispatcher<T> dispatcher) {
+       dispatcher.register(
+-         (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)LiteralArgumentBuilder.literal("return")
+-                     .requires(source -> source.hasPermission(2)))
+-                  .then(RequiredArgumentBuilder.argument("value", IntegerArgumentType.integer()).executes(new ReturnCommand.ReturnValueCustomExecutor())))
+-               .then(LiteralArgumentBuilder.literal("fail").executes(new ReturnCommand.ReturnFailCustomExecutor())))
+-            .then(LiteralArgumentBuilder.literal("run").forward(dispatcher.getRoot(), new ReturnCommand.ReturnFromCommandCustomModifier(), false))
++          // Pencil start - decompile fix
++          (LiteralArgumentBuilder<T>)LiteralArgumentBuilder.<T>literal("return")
++              .requires(source -> source.hasPermission(2))
++              .then(
++                  RequiredArgumentBuilder.<T, Integer>argument("value", IntegerArgumentType.integer())
++                      .executes(new ReturnCommand.ReturnValueCustomExecutor<>())
++              )
++              .then(LiteralArgumentBuilder.<T>literal("fail").executes(new ReturnCommand.ReturnFailCustomExecutor<>()))
++              .then(LiteralArgumentBuilder.<T>literal("run").forward(dispatcher.getRoot(), new ReturnCommand.ReturnFromCommandCustomModifier<>(), false))
++          // Pencil end
+       );
+    }
+ 
+diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServerProperties.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServerProperties.java
+index 9ce36bc..517f777 100644
+--- a/src/main/java/net/minecraft/server/dedicated/DedicatedServerProperties.java
++++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServerProperties.java
+@@ -5,16 +5,12 @@ import com.google.common.base.Strings;
+ import com.google.gson.JsonElement;
+ import com.google.gson.JsonObject;
+ import com.mojang.logging.LogUtils;
++import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
+ import com.mojang.serialization.JsonOps;
+ import java.nio.charset.StandardCharsets;
+ import java.nio.file.Path;
+-import java.util.List;
+-import java.util.Locale;
+-import java.util.Map;
+-import java.util.Optional;
+-import java.util.Properties;
+-import java.util.UUID;
++import java.util.*;
+ import java.util.concurrent.TimeUnit;
+ import java.util.regex.Pattern;
+ import javax.annotation.Nullable;
+@@ -225,9 +221,13 @@ public class DedicatedServerProperties extends Settings<DedicatedServerPropertie
+          WorldDimensions worldDimensions = holder.value().createWorldDimensions();
+          if (holder.is(WorldPresets.FLAT)) {
+             RegistryOps<JsonElement> registryOps = dynamicRegistryManager.createSerializationContext(JsonOps.INSTANCE);
+-            Optional<FlatLevelGeneratorSettings> optional = FlatLevelGeneratorSettings.CODEC
+-               .parse(new Dynamic(registryOps, this.generatorSettings()))
+-               .resultOrPartial(DedicatedServerProperties.LOGGER::error);
++            // Pencil start - decompile fix
++            DataResult<FlatLevelGeneratorSettings> dataresult = FlatLevelGeneratorSettings.CODEC.parse(new Dynamic(registryOps, this.generatorSettings()));
++            Logger logger = DedicatedServerProperties.LOGGER;
++
++            Objects.requireNonNull(logger);
++            Optional<FlatLevelGeneratorSettings> optional = dataresult.resultOrPartial(logger::error);
++            // Pencil end
+             if (optional.isPresent()) {
+                return worldDimensions.replaceOverworldGenerator(dynamicRegistryManager, new FlatLevelSource(optional.get()));
+             }
+diff --git a/src/main/java/net/minecraft/server/dedicated/Settings.java b/src/main/java/net/minecraft/server/dedicated/Settings.java
+index 3cda7a8..852a4d6 100644
+--- a/src/main/java/net/minecraft/server/dedicated/Settings.java
++++ b/src/main/java/net/minecraft/server/dedicated/Settings.java
+@@ -119,7 +119,7 @@ public abstract class Settings<T extends Settings<T>> {
+       String string = this.getStringRaw(key);
+       V object = (V)MoreObjects.firstNonNull(string != null ? parser.apply(string) : null, fallback);
+       this.properties.put(key, stringifier.apply(object));
+-      return new Settings.MutableValue<>(key, object, stringifier);
++      return new Settings.MutableValue(key, object, stringifier); // Pencil - decompile fix
+    }
+ 
+    protected <V> V get(String key, Function<String, V> parser, UnaryOperator<V> parsedTransformer, Function<V, String> stringifier, V fallback) {
 diff --git a/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java b/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java
 index 1f06d30..26a8482 100644
 --- a/src/main/java/net/minecraft/server/level/ChunkTaskPriorityQueue.java
@@ -1086,6 +1343,23 @@ index 0084c00..811be3b 100644
           itemStack2.set(
              DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(this.filterableFromOutgoing(title), this.player.getName().getString(), 0, list, true)
           );
+diff --git a/src/main/java/net/minecraft/server/players/OldUsersConverter.java b/src/main/java/net/minecraft/server/players/OldUsersConverter.java
+index aba22e6..e21de8f 100644
+--- a/src/main/java/net/minecraft/server/players/OldUsersConverter.java
++++ b/src/main/java/net/minecraft/server/players/OldUsersConverter.java
+@@ -301,10 +301,10 @@ public class OldUsersConverter {
+                }
+ 
+                private void movePlayerFile(File playerDataFolder, String fileName, String uuid) {
+-                  File file = new File(file, fileName + ".dat");
++                  File fileA = new File(file, fileName + ".dat"); // Pencil - decompile fix
+                   File file2 = new File(playerDataFolder, uuid + ".dat");
+                   OldUsersConverter.ensureDirectoryExists(playerDataFolder);
+-                  if (!file.renameTo(file2)) {
++                  if (!fileA.renameTo(file2)) { // Pencil - decompile fix
+                      throw new OldUsersConverter.ConversionError("Could not convert file for " + fileName);
+                   }
+                }
 diff --git a/src/main/java/net/minecraft/util/CubicSpline.java b/src/main/java/net/minecraft/util/CubicSpline.java
 index 15186a2..7276181 100644
 --- a/src/main/java/net/minecraft/util/CubicSpline.java
@@ -2745,6 +3019,19 @@ index d80a1aa..b225010 100644
     }
  
     @Nullable
+diff --git a/src/main/java/net/minecraft/world/entity/SpawnPlacements.java b/src/main/java/net/minecraft/world/entity/SpawnPlacements.java
+index 9bbb435..3000af0 100644
+--- a/src/main/java/net/minecraft/world/entity/SpawnPlacements.java
++++ b/src/main/java/net/minecraft/world/entity/SpawnPlacements.java
+@@ -73,7 +73,7 @@ public class SpawnPlacements {
+       EntityType<T> type, ServerLevelAccessor world, MobSpawnType spawnReason, BlockPos pos, RandomSource random
+    ) {
+       SpawnPlacements.Data data = DATA_BY_TYPE.get(type);
+-      return data == null || data.predicate.test(type, world, spawnReason, pos, random);
++      return data == null || data.predicate.test((EntityType)type, world, spawnReason, pos, random); // Pencil - decompile fix
+    }
+ 
+    static {
 diff --git a/src/main/java/net/minecraft/world/entity/ai/Brain.java b/src/main/java/net/minecraft/world/entity/ai/Brain.java
 index 8bceca8..6399ce0 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/Brain.java
@@ -2807,6 +3094,115 @@ index 8bceca8..6399ce0 100644
     }
  
     public <U> long getTimeUntilExpiry(MemoryModuleType<U> type) {
+diff --git a/src/main/java/net/minecraft/world/entity/ai/attributes/DefaultAttributes.java b/src/main/java/net/minecraft/world/entity/ai/attributes/DefaultAttributes.java
+index 685b7f7..5fa61f3 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/attributes/DefaultAttributes.java
++++ b/src/main/java/net/minecraft/world/entity/ai/attributes/DefaultAttributes.java
+@@ -85,7 +85,7 @@ import org.slf4j.Logger;
+ 
+ public class DefaultAttributes {
+    private static final Logger LOGGER = LogUtils.getLogger();
+-   private static final Map<EntityType<? extends LivingEntity>, AttributeSupplier> SUPPLIERS = ImmutableMap.builder()
++   private static final Map<EntityType<? extends LivingEntity>, AttributeSupplier> SUPPLIERS = ImmutableMap.<EntityType<? extends LivingEntity>, AttributeSupplier>builder() // Pencil - decompile fix
+       .put(EntityType.ALLAY, Allay.createAttributes().build())
+       .put(EntityType.ARMADILLO, Armadillo.createAttributes().build())
+       .put(EntityType.ARMOR_STAND, ArmorStand.createAttributes().build())
+diff --git a/src/main/java/net/minecraft/world/entity/ai/behavior/InteractWith.java b/src/main/java/net/minecraft/world/entity/ai/behavior/InteractWith.java
+index 7a49f82..7449797 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/behavior/InteractWith.java
++++ b/src/main/java/net/minecraft/world/entity/ai/behavior/InteractWith.java
+@@ -43,7 +43,7 @@ public class InteractWith {
+                               target -> target.distanceToSqr(entity) <= (double)i && predicate.test(target)
+                            );
+                            optional.ifPresent(target -> {
+-                              targetValue.set(target);
++                              targetValue.set((T)target); // Pencil - decompile fix
+                               lookTarget.set(new EntityTracker(target, true));
+                               walkTarget.set(new WalkTarget(new EntityTracker(target, false), speed, completionRange));
+                            });
+diff --git a/src/main/java/net/minecraft/world/entity/ai/behavior/declarative/BehaviorBuilder.java b/src/main/java/net/minecraft/world/entity/ai/behavior/declarative/BehaviorBuilder.java
+index 46d3a17..744c299 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/behavior/declarative/BehaviorBuilder.java
++++ b/src/main/java/net/minecraft/world/entity/ai/behavior/declarative/BehaviorBuilder.java
+@@ -141,9 +141,7 @@ public class BehaviorBuilder<E extends LivingEntity, M> implements App<BehaviorB
+ 
+       public <A, R> Function<App<BehaviorBuilder.Mu<E>, A>, App<BehaviorBuilder.Mu<E>, R>> lift1(App<BehaviorBuilder.Mu<E>, Function<A, R>> app) {
+          return app2 -> {
+-            final BehaviorBuilder.TriggerWithResult<E, A> triggerWithResult = (BehaviorBuilder.TriggerWithResult<E, A>)BehaviorBuilder.get(
+-               (App<BehaviorBuilder.Mu<E>, M>)app2
+-            );
++            final BehaviorBuilder.TriggerWithResult<E, A> triggerWithResult = BehaviorBuilder.get(app2); // Pencil - decompile fix
+             final BehaviorBuilder.TriggerWithResult<E, Function<A, R>> triggerWithResult2 = BehaviorBuilder.get(app);
+             return BehaviorBuilder.create(new BehaviorBuilder.TriggerWithResult<E, R>() {
+                @Override
+@@ -171,9 +169,7 @@ public class BehaviorBuilder<E extends LivingEntity, M> implements App<BehaviorB
+       }
+ 
+       public <T, R> BehaviorBuilder<E, R> map(Function<? super T, ? extends R> function, App<BehaviorBuilder.Mu<E>, T> app) {
+-         final BehaviorBuilder.TriggerWithResult<E, T> triggerWithResult = (BehaviorBuilder.TriggerWithResult<E, T>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app
+-         );
++         final BehaviorBuilder.TriggerWithResult<E, T> triggerWithResult = BehaviorBuilder.get(app); // Pencil - decompile fix
+          return BehaviorBuilder.create(new BehaviorBuilder.TriggerWithResult<E, R>() {
+             @Override
+             public R tryTrigger(ServerLevel world, E entity, long time) {
+@@ -196,12 +192,8 @@ public class BehaviorBuilder<E extends LivingEntity, M> implements App<BehaviorB
+       public <A, B, R> BehaviorBuilder<E, R> ap2(
+          App<BehaviorBuilder.Mu<E>, BiFunction<A, B, R>> app, App<BehaviorBuilder.Mu<E>, A> app2, App<BehaviorBuilder.Mu<E>, B> app3
+       ) {
+-         final BehaviorBuilder.TriggerWithResult<E, A> triggerWithResult = (BehaviorBuilder.TriggerWithResult<E, A>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app2
+-         );
+-         final BehaviorBuilder.TriggerWithResult<E, B> triggerWithResult2 = (BehaviorBuilder.TriggerWithResult<E, B>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app3
+-         );
++         final BehaviorBuilder.TriggerWithResult<E, A> triggerWithResult = BehaviorBuilder.get(app2); // Pencil - decompile fix
++         final BehaviorBuilder.TriggerWithResult<E, B> triggerWithResult2 = BehaviorBuilder.get(app3); // Pencil - decompile fix
+          final BehaviorBuilder.TriggerWithResult<E, BiFunction<A, B, R>> triggerWithResult3 = BehaviorBuilder.get(app);
+          return BehaviorBuilder.create(new BehaviorBuilder.TriggerWithResult<E, R>() {
+             @Override
+@@ -238,15 +230,9 @@ public class BehaviorBuilder<E extends LivingEntity, M> implements App<BehaviorB
+          App<BehaviorBuilder.Mu<E>, T2> app3,
+          App<BehaviorBuilder.Mu<E>, T3> app4
+       ) {
+-         final BehaviorBuilder.TriggerWithResult<E, T1> triggerWithResult = (BehaviorBuilder.TriggerWithResult<E, T1>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app2
+-         );
+-         final BehaviorBuilder.TriggerWithResult<E, T2> triggerWithResult2 = (BehaviorBuilder.TriggerWithResult<E, T2>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app3
+-         );
+-         final BehaviorBuilder.TriggerWithResult<E, T3> triggerWithResult3 = (BehaviorBuilder.TriggerWithResult<E, T3>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app4
+-         );
++         final BehaviorBuilder.TriggerWithResult<E, T1> triggerWithResult = BehaviorBuilder.get(app2); // Pencil - decompile fix
++         final BehaviorBuilder.TriggerWithResult<E, T2> triggerWithResult2 = BehaviorBuilder.get(app3); // Pencil - decompile fix
++         final BehaviorBuilder.TriggerWithResult<E, T3> triggerWithResult3 = BehaviorBuilder.get(app4); // Pencil - decompile fix
+          final BehaviorBuilder.TriggerWithResult<E, Function3<T1, T2, T3, R>> triggerWithResult4 = BehaviorBuilder.get(app);
+          return BehaviorBuilder.create(
+             new BehaviorBuilder.TriggerWithResult<E, R>() {
+@@ -297,18 +283,10 @@ public class BehaviorBuilder<E extends LivingEntity, M> implements App<BehaviorB
+          App<BehaviorBuilder.Mu<E>, T3> app4,
+          App<BehaviorBuilder.Mu<E>, T4> app5
+       ) {
+-         final BehaviorBuilder.TriggerWithResult<E, T1> triggerWithResult = (BehaviorBuilder.TriggerWithResult<E, T1>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app2
+-         );
+-         final BehaviorBuilder.TriggerWithResult<E, T2> triggerWithResult2 = (BehaviorBuilder.TriggerWithResult<E, T2>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app3
+-         );
+-         final BehaviorBuilder.TriggerWithResult<E, T3> triggerWithResult3 = (BehaviorBuilder.TriggerWithResult<E, T3>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app4
+-         );
+-         final BehaviorBuilder.TriggerWithResult<E, T4> triggerWithResult4 = (BehaviorBuilder.TriggerWithResult<E, T4>)BehaviorBuilder.get(
+-            (App<BehaviorBuilder.Mu<E>, M>)app5
+-         );
++         final BehaviorBuilder.TriggerWithResult<E, T1> triggerWithResult = BehaviorBuilder.get(app2); // Pencil - decompile fix
++         final BehaviorBuilder.TriggerWithResult<E, T2> triggerWithResult2 = BehaviorBuilder.get(app3); // Pencil - decompile fix
++         final BehaviorBuilder.TriggerWithResult<E, T3> triggerWithResult3 = BehaviorBuilder.get(app4); // Pencil - decompile fix
++         final BehaviorBuilder.TriggerWithResult<E, T4> triggerWithResult4 = BehaviorBuilder.get(app5); // Pencil - decompile fix
+          final BehaviorBuilder.TriggerWithResult<E, Function4<T1, T2, T3, T4, R>> triggerWithResult5 = BehaviorBuilder.get(app);
+          return BehaviorBuilder.create(
+             new BehaviorBuilder.TriggerWithResult<E, R>() {
 diff --git a/src/main/java/net/minecraft/world/entity/ai/gossip/GossipContainer.java b/src/main/java/net/minecraft/world/entity/ai/gossip/GossipContainer.java
 index c8cf370..5c16de7 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/gossip/GossipContainer.java
@@ -2896,6 +3292,28 @@ index 16b8e1d..5c9df12 100644
     private int eatAnimationTick;
     private EatBlockGoal eatBlockGoal;
  
+diff --git a/src/main/java/net/minecraft/world/entity/animal/allay/AllayAi.java b/src/main/java/net/minecraft/world/entity/animal/allay/AllayAi.java
+index 81e95a4..089180f 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/allay/AllayAi.java
++++ b/src/main/java/net/minecraft/world/entity/animal/allay/AllayAi.java
+@@ -63,7 +63,7 @@ public class AllayAi {
+          0,
+          ImmutableList.of(
+             new Swim(0.8F),
+-            new AnimalPanic(2.5F),
++            new AnimalPanic<>(2.5F), // Pencil - decompile fix
+             new LookAtTargetSink(45, 90),
+             new MoveToTargetSink(),
+             new CountDownCooldownTicks(MemoryModuleType.LIKED_NOTEBLOCK_COOLDOWN_TICKS),
+@@ -77,7 +77,7 @@ public class AllayAi {
+          Activity.IDLE,
+          ImmutableList.of(
+             Pair.of(0, GoToWantedItem.create(allay -> true, 1.75F, true, 32)),
+-            Pair.of(1, new GoAndGiveItemsToTarget(AllayAi::getItemDepositPosition, 2.25F, 20)),
++            Pair.of(1, new GoAndGiveItemsToTarget<>(AllayAi::getItemDepositPosition, 2.25F, 20)), // Pencil - decompile fix
+             Pair.of(2, StayCloseToTarget.create(AllayAi::getItemDepositPosition, Predicate.not(AllayAi::hasWantedItem), 4, 16, 2.25F)),
+             Pair.of(3, SetEntityLookTargetSometimes.create(6.0F, UniformInt.of(30, 60))),
+             Pair.of(
 diff --git a/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java b/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java
 index 4524bc2..15757fc 100644
 --- a/src/main/java/net/minecraft/world/entity/animal/axolotl/Axolotl.java
@@ -2954,6 +3372,45 @@ index 4524bc2..15757fc 100644
     private static final EntityDataAccessor<Integer> DATA_VARIANT = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_PLAYING_DEAD = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> FROM_BUCKET = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.BOOLEAN);
+diff --git a/src/main/java/net/minecraft/world/entity/animal/frog/FrogAi.java b/src/main/java/net/minecraft/world/entity/animal/frog/FrogAi.java
+index 6e27b12..8293774 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/frog/FrogAi.java
++++ b/src/main/java/net/minecraft/world/entity/animal/frog/FrogAi.java
+@@ -81,7 +81,7 @@ public class FrogAi {
+          Activity.CORE,
+          0,
+          ImmutableList.of(
+-            new AnimalPanic(2.0F),
++            new AnimalPanic<>(2.0F), // Pencil - decompile fix
+             new LookAtTargetSink(45, 90),
+             new MoveToTargetSink(),
+             new CountDownCooldownTicks(MemoryModuleType.TEMPTATION_COOLDOWN_TICKS),
+diff --git a/src/main/java/net/minecraft/world/entity/animal/frog/TadpoleAi.java b/src/main/java/net/minecraft/world/entity/animal/frog/TadpoleAi.java
+index c288ae4..ab49ef6 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/frog/TadpoleAi.java
++++ b/src/main/java/net/minecraft/world/entity/animal/frog/TadpoleAi.java
+@@ -41,7 +41,7 @@ public class TadpoleAi {
+          Activity.CORE,
+          0,
+          ImmutableList.of(
+-            new AnimalPanic(2.0F), new LookAtTargetSink(45, 90), new MoveToTargetSink(), new CountDownCooldownTicks(MemoryModuleType.TEMPTATION_COOLDOWN_TICKS)
++            new AnimalPanic<>(2.0F), new LookAtTargetSink(45, 90), new MoveToTargetSink(), new CountDownCooldownTicks(MemoryModuleType.TEMPTATION_COOLDOWN_TICKS) // Pencil - decompile fix
+          )
+       );
+    }
+diff --git a/src/main/java/net/minecraft/world/entity/animal/goat/GoatAi.java b/src/main/java/net/minecraft/world/entity/animal/goat/GoatAi.java
+index 7306a56..b1a5b9a 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/goat/GoatAi.java
++++ b/src/main/java/net/minecraft/world/entity/animal/goat/GoatAi.java
+@@ -77,7 +77,7 @@ public class GoatAi {
+          0,
+          ImmutableList.of(
+             new Swim(0.8F),
+-            new AnimalPanic(2.0F),
++            new AnimalPanic<>(2.0F), // Pencil - decompile fix
+             new LookAtTargetSink(45, 90),
+             new MoveToTargetSink(),
+             new CountDownCooldownTicks(MemoryModuleType.TEMPTATION_COOLDOWN_TICKS),
 diff --git a/src/main/java/net/minecraft/world/entity/monster/Zoglin.java b/src/main/java/net/minecraft/world/entity/monster/Zoglin.java
 index bb5b311..e754c25 100644
 --- a/src/main/java/net/minecraft/world/entity/monster/Zoglin.java
@@ -2989,6 +3446,67 @@ index c70d179..cb44caf 100644
     );
  
     public Hoglin(EntityType<? extends Hoglin> type, Level world) {
+diff --git a/src/main/java/net/minecraft/world/entity/monster/piglin/PiglinAi.java b/src/main/java/net/minecraft/world/entity/monster/piglin/PiglinAi.java
+index a433778..dd932bd 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/piglin/PiglinAi.java
++++ b/src/main/java/net/minecraft/world/entity/monster/piglin/PiglinAi.java
+@@ -173,7 +173,7 @@ public class PiglinAi {
+             BehaviorBuilder.triggerIf(PiglinAi::hasCrossbow, BackUpIfTooClose.create(5, 0.75F)),
+             SetWalkTargetFromAttackTargetIfTargetOutOfReach.create(1.0F),
+             MeleeAttack.create(20),
+-            new CrossbowAttack(),
++            new CrossbowAttack<>(), // Pencil - decompile fix
+             RememberIfHoglinWasKilled.create(),
+             EraseMemoryIf.create(PiglinAi::isNearZombified, MemoryModuleType.ATTACK_TARGET)
+          ),
+@@ -191,7 +191,7 @@ public class PiglinAi {
+             StartAttacking.create(AbstractPiglin::isAdult, PiglinAi::findNearestValidAttackTarget),
+             BehaviorBuilder.triggerIf(piglin -> !piglin.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)),
+             BehaviorBuilder.triggerIf(Piglin::isDancing, GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 4, 0.6F)),
+-            new RunOne(
++            new RunOne<>( // Pencil - decompile fix
+                ImmutableList.of(
+                   Pair.of(SetEntityLookTarget.create(EntityType.PIGLIN, 8.0F), 1),
+                   Pair.of(RandomStroll.stroll(0.6F, 2, 1), 1),
+@@ -240,7 +240,7 @@ public class PiglinAi {
+             BehaviorBuilder.sequence(
+                BehaviorBuilder.triggerIf(Entity::isPassenger),
+                TriggerGate.triggerOneShuffled(
+-                  ImmutableList.builder().addAll(createLookBehaviors()).add(Pair.of(BehaviorBuilder.triggerIf(piglin -> true), 1)).build()
++                  ImmutableList.<Pair<? extends net.minecraft.world.entity.ai.behavior.declarative.Trigger<? super LivingEntity>, Integer>>builder().addAll(createLookBehaviors()).add(Pair.of(BehaviorBuilder.triggerIf(piglin -> true), 1)).build() // Pencil - decompile fix
+                )
+             ),
+             DismountOrSkipMounting.create(8, PiglinAi::wantsToStopRiding)
+@@ -258,7 +258,7 @@ public class PiglinAi {
+    }
+ 
+    private static RunOne<LivingEntity> createIdleLookBehaviors() {
+-      return new RunOne<>(ImmutableList.builder().addAll(createLookBehaviors()).add(Pair.of(new DoNothing(30, 60), 1)).build());
++      return new RunOne<>(ImmutableList.<Pair<? extends BehaviorControl<? super LivingEntity>, Integer>>builder().addAll(createLookBehaviors()).add(Pair.of(new DoNothing(30, 60), 1)).build()); // Pencil - decompile fix
+    }
+ 
+    private static RunOne<Piglin> createIdleMovementBehaviors() {
+diff --git a/src/main/java/net/minecraft/world/entity/monster/piglin/StartHuntingHoglin.java b/src/main/java/net/minecraft/world/entity/monster/piglin/StartHuntingHoglin.java
+index fede062..9cf1fcc 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/piglin/StartHuntingHoglin.java
++++ b/src/main/java/net/minecraft/world/entity/monster/piglin/StartHuntingHoglin.java
+@@ -19,14 +19,14 @@ public class StartHuntingHoglin {
+                   context,
+                   (nearestVisibleHuntableHoglin, angryAt, huntedRecently, nearestVisibleAdultPiglins) -> (world, entity, time) -> {
+                         if (!entity.isBaby()
+-                           && !context.<List>tryGet(nearestVisibleAdultPiglins)
++                           && !context.tryGet(nearestVisibleAdultPiglins) // Pencil - decompile fix
+                               .map(piglin -> piglin.stream().anyMatch(StartHuntingHoglin::hasHuntedRecently))
+                               .isPresent()) {
+                            Hoglin hoglin = context.get(nearestVisibleHuntableHoglin);
+                            PiglinAi.setAngerTarget(entity, hoglin);
+                            PiglinAi.dontKillAnyMoreHoglinsForAWhile(entity);
+                            PiglinAi.broadcastAngerTarget(entity, hoglin);
+-                           context.<List>tryGet(nearestVisibleAdultPiglins).ifPresent(piglin -> piglin.forEach(PiglinAi::dontKillAnyMoreHoglinsForAWhile));
++                           context.tryGet(nearestVisibleAdultPiglins).ifPresent(piglin -> piglin.forEach(PiglinAi::dontKillAnyMoreHoglinsForAWhile)); // Pencil - decompile fix
+                            return true;
+                         } else {
+                            return false;
 diff --git a/src/main/java/net/minecraft/world/entity/monster/warden/AngerManagement.java b/src/main/java/net/minecraft/world/entity/monster/warden/AngerManagement.java
 index b266c5b..02b2036 100644
 --- a/src/main/java/net/minecraft/world/entity/monster/warden/AngerManagement.java
@@ -3007,6 +3525,37 @@ index b266c5b..02b2036 100644
           )
           .collect(Collectors.toList());
     }
+diff --git a/src/main/java/net/minecraft/world/entity/monster/warden/WardenAi.java b/src/main/java/net/minecraft/world/entity/monster/warden/WardenAi.java
+index 96780d3..6af974c 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/warden/WardenAi.java
++++ b/src/main/java/net/minecraft/world/entity/monster/warden/WardenAi.java
+@@ -120,7 +120,7 @@ public class WardenAi {
+    }
+ 
+    private static void initEmergeActivity(Brain<Warden> brain) {
+-      brain.addActivityAndRemoveMemoryWhenStopped(Activity.EMERGE, 5, ImmutableList.of(new Emerging(EMERGE_DURATION)), MemoryModuleType.IS_EMERGING);
++      brain.addActivityAndRemoveMemoryWhenStopped(Activity.EMERGE, 5, ImmutableList.of(new Emerging<>(EMERGE_DURATION)), MemoryModuleType.IS_EMERGING); // Pencil - decompile fix
+    }
+ 
+    private static void initDiggingActivity(Brain<Warden> brain) {
+@@ -138,7 +138,7 @@ public class WardenAi {
+          ImmutableList.of(
+             SetRoarTarget.create(Warden::getEntityAngryAt),
+             TryToSniff.create(),
+-            new RunOne(
++            new RunOne<>( // Pencil - decompile fix
+                ImmutableMap.of(MemoryModuleType.IS_SNIFFING, MemoryStatus.VALUE_ABSENT),
+                ImmutableList.of(Pair.of(RandomStroll.stroll(0.5F), 2), Pair.of(new DoNothing(30, 60), 1))
+             )
+@@ -157,7 +157,7 @@ public class WardenAi {
+ 
+    private static void initSniffingActivity(Brain<Warden> brain) {
+       brain.addActivityAndRemoveMemoryWhenStopped(
+-         Activity.SNIFF, 5, ImmutableList.of(SetRoarTarget.create(Warden::getEntityAngryAt), new Sniffing(SNIFFING_DURATION)), MemoryModuleType.IS_SNIFFING
++         Activity.SNIFF, 5, ImmutableList.of(SetRoarTarget.create(Warden::getEntityAngryAt), new Sniffing<>(SNIFFING_DURATION)), MemoryModuleType.IS_SNIFFING // Pencil - decompile fix
+       );
+    }
+ 
 diff --git a/src/main/java/net/minecraft/world/entity/npc/Villager.java b/src/main/java/net/minecraft/world/entity/npc/Villager.java
 index 8900a36..b3a59ab 100644
 --- a/src/main/java/net/minecraft/world/entity/npc/Villager.java
@@ -3241,6 +3790,45 @@ index b0c7dbb..6efef19 100644
     }
  
     @Override
+diff --git a/src/main/java/net/minecraft/world/item/AdventureModePredicate.java b/src/main/java/net/minecraft/world/item/AdventureModePredicate.java
+index 09c66ba..088fc7d 100644
+--- a/src/main/java/net/minecraft/world/item/AdventureModePredicate.java
++++ b/src/main/java/net/minecraft/world/item/AdventureModePredicate.java
+@@ -111,7 +111,7 @@ public class AdventureModePredicate {
+       return blockPredicates.stream()
+          .flatMap(predicate -> predicate.blocks().orElseThrow().stream())
+          .distinct()
+-         .map(holder -> holder.value().getName().withStyle(ChatFormatting.DARK_GRAY))
++         .<Component>map(holder -> holder.value().getName().withStyle(ChatFormatting.DARK_GRAY)) // Pencil - decompile fix
+          .toList();
+    }
+ 
+diff --git a/src/main/java/net/minecraft/world/item/HoneycombItem.java b/src/main/java/net/minecraft/world/item/HoneycombItem.java
+index b8da512..a2f161b 100644
+--- a/src/main/java/net/minecraft/world/item/HoneycombItem.java
++++ b/src/main/java/net/minecraft/world/item/HoneycombItem.java
+@@ -21,7 +21,7 @@ import net.minecraft.world.level.gameevent.GameEvent;
+ 
+ public class HoneycombItem extends Item implements SignApplicator {
+    public static final Supplier<BiMap<Block, Block>> WAXABLES = Suppliers.memoize(
+-      () -> ImmutableBiMap.builder()
++      () -> ImmutableBiMap.<Block, Block>builder() // Pencil - decompile fix
+             .put(Blocks.COPPER_BLOCK, Blocks.WAXED_COPPER_BLOCK)
+             .put(Blocks.EXPOSED_COPPER, Blocks.WAXED_EXPOSED_COPPER)
+             .put(Blocks.WEATHERED_COPPER, Blocks.WAXED_WEATHERED_COPPER)
+diff --git a/src/main/java/net/minecraft/world/item/component/DebugStickState.java b/src/main/java/net/minecraft/world/item/component/DebugStickState.java
+index 8baf5ac..808dae1 100644
+--- a/src/main/java/net/minecraft/world/item/component/DebugStickState.java
++++ b/src/main/java/net/minecraft/world/item/component/DebugStickState.java
+@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.state.properties.Property;
+ 
+ public record DebugStickState(Map<Holder<Block>, Property<?>> properties) {
+    public static final DebugStickState EMPTY = new DebugStickState(Map.of());
+-   public static final Codec<DebugStickState> CODEC = Codec.dispatchedMap(
++   public static final Codec<DebugStickState> CODEC = Codec.<Holder<Block>, Property<?>>dispatchedMap( // Pencil - decompile fix
+          BuiltInRegistries.BLOCK.holderByNameCodec(),
+          block -> Codec.STRING
+                .comapFlatMap(
 diff --git a/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java b/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java
 index ea6ef92..92492dd 100644
 --- a/src/main/java/net/minecraft/world/item/crafting/RecipeManager.java
@@ -3280,6 +3868,19 @@ index f07ecb4..14cbbb4 100644
              instance -> instance.group(
                       LevelBasedValue.CODEC.fieldOf("value").forGetter(LevelBasedValue.Clamped::value),
                       Codec.FLOAT.fieldOf("min").forGetter(LevelBasedValue.Clamped::min),
+diff --git a/src/main/java/net/minecraft/world/item/enchantment/effects/SpawnParticlesEffect.java b/src/main/java/net/minecraft/world/item/enchantment/effects/SpawnParticlesEffect.java
+index f11c4c9..7d52105 100644
+--- a/src/main/java/net/minecraft/world/item/enchantment/effects/SpawnParticlesEffect.java
++++ b/src/main/java/net/minecraft/world/item/enchantment/effects/SpawnParticlesEffect.java
+@@ -77,7 +77,7 @@ public record SpawnParticlesEffect(
+    }
+ 
+    public static record PositionSource(SpawnParticlesEffect.PositionSourceType type, float offset, float scale) {
+-      public static final MapCodec<SpawnParticlesEffect.PositionSource> CODEC = RecordCodecBuilder.mapCodec(
++      public static final MapCodec<SpawnParticlesEffect.PositionSource> CODEC = RecordCodecBuilder.<SpawnParticlesEffect.PositionSource>mapCodec( // Pencil - decompile fix
+             instance -> instance.group(
+                      SpawnParticlesEffect.PositionSourceType.CODEC.fieldOf("type").forGetter(SpawnParticlesEffect.PositionSource::type),
+                      Codec.FLOAT.optionalFieldOf("offset", 0.0F).forGetter(SpawnParticlesEffect.PositionSource::offset),
 diff --git a/src/main/java/net/minecraft/world/level/GameRules.java b/src/main/java/net/minecraft/world/level/GameRules.java
 index 0cfdd7c..5df4828 100644
 --- a/src/main/java/net/minecraft/world/level/GameRules.java
@@ -3334,6 +3935,18 @@ index 330f6f8..bcec4c0 100644
                    .orElseGet(() -> DataResult.error(() -> "Unknown preset: " + resourceLocation)),
              preset -> DataResult.success(preset.id)
           );
+diff --git a/src/main/java/net/minecraft/world/level/block/BaseEntityBlock.java b/src/main/java/net/minecraft/world/level/block/BaseEntityBlock.java
+index a9041b9..71cda76 100644
+--- a/src/main/java/net/minecraft/world/level/block/BaseEntityBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/BaseEntityBlock.java
+@@ -42,6 +42,6 @@ public abstract class BaseEntityBlock extends Block implements EntityBlock {
+    protected static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(
+       BlockEntityType<A> givenType, BlockEntityType<E> expectedType, BlockEntityTicker<? super E> ticker
+    ) {
+-      return expectedType == givenType ? ticker : null;
++      return expectedType == givenType ? (BlockEntityTicker<A>) ticker : null; // Pencil - decompile fix
+    }
+ }
 diff --git a/src/main/java/net/minecraft/world/level/block/SculkSpreader.java b/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
 index 0322b11..b37f963 100644
 --- a/src/main/java/net/minecraft/world/level/block/SculkSpreader.java
@@ -3388,6 +4001,19 @@ index 0322b11..b37f963 100644
        }
     }
  
+diff --git a/src/main/java/net/minecraft/world/level/block/WeatheringCopper.java b/src/main/java/net/minecraft/world/level/block/WeatheringCopper.java
+index 5d51ae9..6951f72 100644
+--- a/src/main/java/net/minecraft/world/level/block/WeatheringCopper.java
++++ b/src/main/java/net/minecraft/world/level/block/WeatheringCopper.java
+@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
+ 
+ public interface WeatheringCopper extends ChangeOverTimeBlock<WeatheringCopper.WeatherState> {
+    Supplier<BiMap<Block, Block>> NEXT_BY_BLOCK = Suppliers.memoize(
+-      () -> ImmutableBiMap.builder()
++      () -> ImmutableBiMap.<Block, Block>builder() // Pencil - decompile fix
+             .put(Blocks.COPPER_BLOCK, Blocks.EXPOSED_COPPER)
+             .put(Blocks.EXPOSED_COPPER, Blocks.WEATHERED_COPPER)
+             .put(Blocks.WEATHERED_COPPER, Blocks.OXIDIZED_COPPER)
 diff --git a/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java
 index e5a4fe8..4e8b65c 100644
 --- a/src/main/java/net/minecraft/world/level/block/entity/SkullBlockEntity.java
@@ -3551,6 +4177,61 @@ index 3d56541..078340f 100644
     }
  
     public PalettedContainer(
+diff --git a/src/main/java/net/minecraft/world/level/chunk/storage/ChunkSerializer.java b/src/main/java/net/minecraft/world/level/chunk/storage/ChunkSerializer.java
+index f0df040..af1f171 100644
+--- a/src/main/java/net/minecraft/world/level/chunk/storage/ChunkSerializer.java
++++ b/src/main/java/net/minecraft/world/level/chunk/storage/ChunkSerializer.java
+@@ -3,15 +3,14 @@ package net.minecraft.world.level.chunk.storage;
+ import com.google.common.collect.Maps;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.Codec;
++import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
+ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+ import it.unimi.dsi.fastutil.longs.LongSet;
+ import it.unimi.dsi.fastutil.shorts.ShortList;
+ import it.unimi.dsi.fastutil.shorts.ShortListIterator;
+-import java.util.Arrays;
+-import java.util.EnumSet;
+-import java.util.Map;
+-import java.util.Objects;
++
++import java.util.*;
+ import java.util.Map.Entry;
+ import javax.annotation.Nullable;
+ import net.minecraft.core.BlockPos;
+@@ -157,10 +156,7 @@ public class ChunkSerializer {
+       ChunkType chunkType = getChunkTypeFromTag(nbt);
+       BlendingData blendingData;
+       if (nbt.contains("blending_data", 10)) {
+-         blendingData = (BlendingData)BlendingData.CODEC
+-            .parse(new Dynamic(NbtOps.INSTANCE, nbt.getCompound("blending_data")))
+-            .resultOrPartial(LOGGER::error)
+-            .orElse(null);
++         blendingData = (BlendingData) ((DataResult<BlendingData>) BlendingData.CODEC.parse(new Dynamic(NbtOps.INSTANCE, nbt.getCompound("blending_data")))).resultOrPartial(LOGGER::error).orElse(null); // Pencil - decompile fix
+       } else {
+          blendingData = null;
+       }
+@@ -187,10 +183,15 @@ public class ChunkSerializer {
+          chunkAccess = protoChunk;
+          protoChunk.setInhabitedTime(m);
+          if (nbt.contains("below_zero_retrogen", 10)) {
+-            BelowZeroRetrogen.CODEC
+-               .parse(new Dynamic(NbtOps.INSTANCE, nbt.getCompound("below_zero_retrogen")))
+-               .resultOrPartial(LOGGER::error)
+-               .ifPresent(protoChunk::setBelowZeroRetrogen);
++            // Pencil start - decompile fix
++            DataResult dataresult = BelowZeroRetrogen.CODEC.parse(new Dynamic(NbtOps.INSTANCE, nbt.getCompound("below_zero_retrogen")));
++            Logger logger = ChunkSerializer.LOGGER;
++            Objects.requireNonNull(logger);
++            Optional<BelowZeroRetrogen> optional = ((DataResult<BelowZeroRetrogen>) dataresult).resultOrPartial(logger::error);
++
++            Objects.requireNonNull(protoChunk);
++            optional.ifPresent(protoChunk::setBelowZeroRetrogen);
++            // Pencil end
+          }
+ 
+          ChunkStatus chunkStatus = ChunkStatus.byName(nbt.getString("Status"));
 diff --git a/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java b/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java
 index 9db8c38..f502517 100644
 --- a/src/main/java/net/minecraft/world/level/gameevent/EntityPositionSource.java
@@ -3744,6 +4425,19 @@ index e79e000..3101c19 100644
           instance -> instance.group(
                    Codec.unboundedMap(ResourceKey.codec(Registries.LEVEL_STEM), LevelStem.CODEC).fieldOf("dimensions").forGetter(preset -> preset.dimensions)
                 )
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/presets/WorldPresets.java b/src/main/java/net/minecraft/world/level/levelgen/presets/WorldPresets.java
+index 7a33b46..ff9095b 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/presets/WorldPresets.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/presets/WorldPresets.java
+@@ -49,7 +49,7 @@ public class WorldPresets {
+ 
+    public static Optional<ResourceKey<WorldPreset>> fromSettings(WorldDimensions registry) {
+       return registry.get(LevelStem.OVERWORLD).flatMap(overworld -> {
+-         Object var10000;
++         Object var10000 = null; // Pencil - decompile fix
+          Objects.requireNonNull(var10000);
+          ChunkGenerator chunkGenerator = (ChunkGenerator)var10000;
+ 
 diff --git a/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java b/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java
 index 9c73d92..f6344ca 100644
 --- a/src/main/java/net/minecraft/world/level/levelgen/structure/StructurePiece.java
@@ -3836,6 +4530,19 @@ index a0a288d..880d78a 100644
                 )
                 .apply(instance, JigsawStructure::new)
        )
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/structure/structures/OceanMonumentPieces.java b/src/main/java/net/minecraft/world/level/levelgen/structure/structures/OceanMonumentPieces.java
+index b1e1523..bbd4ad5 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/structure/structures/OceanMonumentPieces.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/structure/structures/OceanMonumentPieces.java
+@@ -1410,7 +1410,7 @@ public class OceanMonumentPieces {
+       protected static final BlockState LAMP_BLOCK = Blocks.SEA_LANTERN.defaultBlockState();
+       protected static final boolean DO_FILL = true;
+       protected static final BlockState FILL_BLOCK = Blocks.WATER.defaultBlockState();
+-      protected static final Set<Block> FILL_KEEP = ImmutableSet.builder()
++      protected static final Set<Block> FILL_KEEP = ImmutableSet.<Block>builder() // Pencil - decompile fix
+          .add(Blocks.ICE)
+          .add(Blocks.PACKED_ICE)
+          .add(Blocks.BLUE_ICE)
 diff --git a/src/main/java/net/minecraft/world/level/storage/loot/ValidationContext.java b/src/main/java/net/minecraft/world/level/storage/loot/ValidationContext.java
 index 5895f07..6e98f3f 100644
 --- a/src/main/java/net/minecraft/world/level/storage/loot/ValidationContext.java
@@ -3847,6 +4554,54 @@ index 5895f07..6e98f3f 100644
 -      Set<ResourceKey<?>> set = ImmutableSet.builder().addAll(this.visitedElements).add(key).build();
 +      Set<ResourceKey<?>> set = ImmutableSet.<ResourceKey<?>>builder().addAll(this.visitedElements).add(key).build(); // Pencil - decompile fix
        return new ValidationContext(this.reporter.forChild(name), this.params, this.resolver, set);
+    }
+ 
+diff --git a/src/main/java/net/minecraft/world/level/storage/loot/functions/ListOperation.java b/src/main/java/net/minecraft/world/level/storage/loot/functions/ListOperation.java
+index 2e2a806..6b09b9d 100644
+--- a/src/main/java/net/minecraft/world/level/storage/loot/functions/ListOperation.java
++++ b/src/main/java/net/minecraft/world/level/storage/loot/functions/ListOperation.java
+@@ -18,7 +18,7 @@ public interface ListOperation {
+    MapCodec<ListOperation> UNLIMITED_CODEC = codec(Integer.MAX_VALUE);
+ 
+    static MapCodec<ListOperation> codec(int maxSize) {
+-      return ListOperation.Type.CODEC.dispatchMap("mode", ListOperation::mode, mode -> mode.mapCodec).validate(operation -> {
++      return ListOperation.Type.CODEC.<ListOperation>dispatchMap("mode", ListOperation::mode, mode -> mode.mapCodec).validate(operation -> { // Pencil - decompile fix
+          if (operation instanceof ListOperation.ReplaceSection replaceSection && replaceSection.size().isPresent()) {
+             int j = replaceSection.size().get();
+             if (j > maxSize) {
+diff --git a/src/main/java/net/minecraft/world/level/storage/loot/functions/SetAttributesFunction.java b/src/main/java/net/minecraft/world/level/storage/loot/functions/SetAttributesFunction.java
+index 3e527f2..595183d 100644
+--- a/src/main/java/net/minecraft/world/level/storage/loot/functions/SetAttributesFunction.java
++++ b/src/main/java/net/minecraft/world/level/storage/loot/functions/SetAttributesFunction.java
+@@ -130,7 +130,7 @@ public class SetAttributesFunction extends LootItemConditionalFunction {
+       private static final Codec<List<EquipmentSlotGroup>> SLOTS_CODEC = ExtraCodecs.nonEmptyList(
+          Codec.either(EquipmentSlotGroup.CODEC, EquipmentSlotGroup.CODEC.listOf())
+             .xmap(
+-               either -> (List)either.map(List::of, Function.identity()),
++               either -> either.map(List::of, Function.identity()), // Pencil - decompile fix
+                slots -> slots.size() == 1 ? Either.left((EquipmentSlotGroup)slots.getFirst()) : Either.right(slots)
+             )
+       );
+diff --git a/src/main/java/net/minecraft/world/level/storage/loot/predicates/LootItemBlockStatePropertyCondition.java b/src/main/java/net/minecraft/world/level/storage/loot/predicates/LootItemBlockStatePropertyCondition.java
+index d047951..3404a45 100644
+--- a/src/main/java/net/minecraft/world/level/storage/loot/predicates/LootItemBlockStatePropertyCondition.java
++++ b/src/main/java/net/minecraft/world/level/storage/loot/predicates/LootItemBlockStatePropertyCondition.java
+@@ -15,7 +15,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParam;
+ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+ 
+ public record LootItemBlockStatePropertyCondition(Holder<Block> block, Optional<StatePropertiesPredicate> properties) implements LootItemCondition {
+-   public static final MapCodec<LootItemBlockStatePropertyCondition> CODEC = RecordCodecBuilder.mapCodec(
++   public static final MapCodec<LootItemBlockStatePropertyCondition> CODEC = RecordCodecBuilder.<LootItemBlockStatePropertyCondition>mapCodec( // Pencil - decompile fix
+          instance -> instance.group(
+                   BuiltInRegistries.BLOCK.holderByNameCodec().fieldOf("block").forGetter(LootItemBlockStatePropertyCondition::block),
+                   StatePropertiesPredicate.CODEC.optionalFieldOf("properties").forGetter(LootItemBlockStatePropertyCondition::properties)
+@@ -27,7 +27,7 @@ public record LootItemBlockStatePropertyCondition(Holder<Block> block, Optional<
+    private static DataResult<LootItemBlockStatePropertyCondition> validate(LootItemBlockStatePropertyCondition condition) {
+       return condition.properties()
+          .flatMap(predicate -> predicate.checkState(condition.block().value().getStateDefinition()))
+-         .map(property -> DataResult.error(() -> "Block " + condition.block() + " has no property" + property))
++          .map(string -> DataResult.<LootItemBlockStatePropertyCondition>error(() -> "Block " + condition.block() + " has no property" + string)) // Pencil - decompile fix
+          .orElse(DataResult.success(condition));
     }
  
 diff --git a/src/main/java/net/minecraft/world/scores/Scoreboard.java b/src/main/java/net/minecraft/world/scores/Scoreboard.java
