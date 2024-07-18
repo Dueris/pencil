@@ -45,4 +45,5 @@ bin/
 /cache/
 src/main/resources/META-INF
 src/main/resources/version.json
+src/main/resources/versions/patch.patch
 /test/
