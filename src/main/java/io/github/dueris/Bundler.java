@@ -8,12 +8,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Bundler {
+	protected static List<URL> linkedClassPathUrls = new ArrayList<>();
 
 	public static void main(String[] argv) {
 		(new Bundler()).run(argv);
@@ -26,8 +25,7 @@ public class Bundler {
 			String repoDir = System.getProperty("bundlerRepoDir", "");
 			Path outputDir = Paths.get(repoDir);
 			Files.createDirectories(outputDir);
-			List<URL> extractedUrls = new ArrayList<>();
-			new PatcherBuilder().start(() -> {
+			Provider<String> versionProvider = () -> {
 				InputStream inputStream = Bundler.class.getResourceAsStream("/version.json");
 
 				if (inputStream == null) {
@@ -45,15 +43,16 @@ public class Bundler {
 				}
 
 				return jsonContent.split("\"id\": \"")[1].split("\"")[0];
-			});
-			this.readAndExtractDir("libraries", outputDir, extractedUrls);
+			};
+			new PatcherBuilder().start(versionProvider);
+			new LibraryLoader().start(versionProvider);
 			if (mainClassName == null || mainClassName.isEmpty()) {
 				System.out.println("Empty main class specified, exiting");
 				System.exit(0);
 			}
 
 			ClassLoader maybePlatformClassLoader = this.getClass().getClassLoader().getParent();
-			URLClassLoader classLoader = new URLClassLoader(extractedUrls.toArray(new URL[0]), maybePlatformClassLoader);
+			URLClassLoader classLoader = new URLClassLoader(linkedClassPathUrls.toArray(new URL[0]), maybePlatformClassLoader);
 			System.out.println("Starting " + mainClassName);
 			Thread runThread = new Thread(() -> {
 				try {
@@ -87,74 +86,6 @@ public class Bundler {
 		return (T)var5;
 	}
 
-	private void readAndExtractDir(String subdir, Path outputDir, List<URL> extractedUrls) throws Exception {
-		List<Bundler.FileEntry> entries = this.readResource(subdir + ".list", reader -> reader.lines().map(Bundler.FileEntry::parseLine).toList());
-		Path subdirPath = outputDir.resolve(subdir);
-
-		for (Bundler.FileEntry entry : entries) {
-			Path outputFile = subdirPath.resolve(entry.path);
-			this.checkAndExtractJar(subdir, entry, outputFile);
-			extractedUrls.add(outputFile.toUri().toURL());
-		}
-	}
-
-	private void checkAndExtractJar(String subdir, Bundler.FileEntry entry, Path outputFile) throws Exception {
-		if (!Files.exists(outputFile) || !checkIntegrity(outputFile, entry.hash())) {
-			System.out.printf("Unpacking %s (%s:%s) to %s%n", entry.path, subdir, entry.id, outputFile);
-			this.extractJar(subdir, entry.path, outputFile);
-		}
-	}
-
-	private void extractJar(String subdir, String jarPath, Path outputFile) throws IOException {
-		Files.createDirectories(outputFile.getParent());
-
-		try (InputStream input = this.getClass().getResourceAsStream("/META-INF/" + subdir + "/" + jarPath)) {
-			if (input == null) {
-				throw new IllegalStateException("Declared library " + jarPath + " not found");
-			}
-
-			Files.copy(input, outputFile, StandardCopyOption.REPLACE_EXISTING);
-		}
-	}
-
-	private static boolean checkIntegrity(Path file, String expectedHash) throws Exception {
-		MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-		try (InputStream output = Files.newInputStream(file)) {
-			output.transferTo(new DigestOutputStream(OutputStream.nullOutputStream(), digest));
-			String actualHash = byteToHex(digest.digest());
-			if (actualHash.equalsIgnoreCase(expectedHash)) {
-				return true;
-			}
-
-			System.out.printf("Expected file %s to have hash %s, but got %s%n", file, expectedHash, actualHash);
-		}
-
-		return false;
-	}
-
-	private static String byteToHex(byte[] bytes) {
-		StringBuilder result = new StringBuilder(bytes.length * 2);
-
-		for (byte b : bytes) {
-			result.append(Character.forDigit(b >> 4 & 15, 16));
-			result.append(Character.forDigit(b >> 0 & 15, 16));
-		}
-
-		return result.toString();
-	}
-
-	private static record FileEntry(String hash, String id, String path) {
-		public static Bundler.FileEntry parseLine(String line) {
-			String[] fields = line.split("\t");
-			if (fields.length != 3) {
-				throw new IllegalStateException("Malformed library entry: " + line);
-			} else {
-				return new Bundler.FileEntry(fields[0], fields[1], fields[2]);
-			}
-		}
-	}
-
 	@FunctionalInterface
 	private interface ResourceParser<T> {
 		T parse(BufferedReader var1) throws Exception;
@@ -166,5 +97,9 @@ public class Bundler {
 		public void sneakyThrow(Throwable exception) throws T {
 			throw new RuntimeException(exception);
 		}
+	}
+
+	public interface Provider<T> {
+		T get() throws IOException;
 	}
 }

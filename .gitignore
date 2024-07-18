@@ -43,7 +43,5 @@ bin/
 
 ### Pencil ###
 /cache/
-src/main/resources/META-INF
-src/main/resources/version.json
-src/main/resources/versions/patch.patch
 /test/
+/src/main/resources/versions/

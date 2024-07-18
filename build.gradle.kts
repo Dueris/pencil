@@ -18,6 +18,7 @@ val DECOMPILER_VERSION = "1.10.1"
 plugins {
     id("java")
     id("io.papermc.paperweight.core") version "1.7.2-SNAPSHOT" apply true
+    id("io.github.goooler.shadow") version "8.1.7"
     kotlin("jvm")
 }
 
@@ -80,9 +81,7 @@ subprojects {
 }
 
 dependencies {
-    api("net.fabricmc:tiny-remapper:0.10.4")
-    api("org.vineflower:vineflower:1.10.1")
-    api("org.jetbrains.kotlin:kotlin-stdlib")
+    api("io.sigpipe:jbsdiff:1.0")
 
     paramMappings("net.fabricmc:yarn:1.21+build.1:mergedv2")
     remapper("net.fabricmc:tiny-remapper:0.10.3:fat")
@@ -135,11 +134,11 @@ tasks.create("genSource") {
             throw RuntimeException("Unable to clear previous META-INF from bundler")
         }
         moveFile("./Pencil-Server/src/main/java/META-INF", "./Pencil-Server/src/main/resources")
-        moveFile("./.gradle/caches/bundler/META-INF", "./src/main/resources")
         moveFile("./.gradle/caches/bundler/version.json", "./src/main/resources")
         moveFile("./.gradle/caches/resources/data", "./Pencil-Server/src/main/resources")
         moveFile("./.gradle/caches/resources/assets", "./Pencil-Server/src/main/resources")
         safelyDeleteFile("./src/main/resources/META-INF/versions")
+        safelyDeleteFile("./src/main/resources/META-INF/libraries")
         safelyDeleteFile("./.gradle/caches/resources")
 
         runCommand("git|add|.", File("Pencil-Server"))

@@ -1,15 +1,22 @@
 package io.github.dueris;
 
+import io.sigpipe.jbsdiff.InvalidHeaderException;
+import io.sigpipe.jbsdiff.Patch;
+import org.apache.commons.compress.compressors.CompressorException;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 public class PatcherBuilder {
 
-	protected void start(Getter<String> input) throws IOException {
+	protected void start(Bundler.Provider<String> input) throws IOException {
 		start(input.get());
 	}
 
@@ -49,7 +56,7 @@ public class PatcherBuilder {
 			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 			connection.setRequestMethod("GET");
 
-			Path path1 = Paths.get("cache/vanilla-" + mcVersion + ".jar");
+			Path path1 = Paths.get("cache/vanilla-bundler-" + mcVersion + ".jar");
 			Path directoryPath = path1.getParent();
 			if (!Files.exists(directoryPath)) {
 				Files.createDirectories(directoryPath);
@@ -59,7 +66,7 @@ public class PatcherBuilder {
 				System.out.println("Downloading vanilla jar...");
 
 				try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
-					 FileOutputStream fileOutputStream = new FileOutputStream("cache/vanilla-" + mcVersion + ".jar")) {
+					 FileOutputStream fileOutputStream = new FileOutputStream("cache/vanilla-bundler-" + mcVersion + ".jar")) {
 
 					byte[] dataBuffer = new byte[1024];
 					int bytesRead;
@@ -72,7 +79,38 @@ public class PatcherBuilder {
 				}
 			}
 
-		} catch (IOException e) {
+			try (JarFile jarFile = new JarFile(path1.toFile())) {
+				JarEntry entry = jarFile.getJarEntry("META-INF/versions/" + mcVersion + "/server-" + mcVersion + ".jar");
+
+				if (entry == null) {
+					System.out.println("Entry not found in the JAR file.");
+					return;
+				}
+
+				try (InputStream inputStream = jarFile.getInputStream(entry)) {
+					Files.copy(inputStream, Paths.get("cache/vanilla-" + mcVersion + ".jar"), StandardCopyOption.REPLACE_EXISTING);
+					System.out.println("Entry extracted successfully.");
+				}
+			}
+
+			File patch = extractResource("/versions/patch.patch", "cache");
+			File out = Paths.get("versions/" + mcVersion + "/pencil-" + mcVersion + ".jar").toFile();
+			if (!out.getParentFile().exists()) {
+				out.getParentFile().mkdirs();
+			}
+
+			Patch.patch(
+				new FileInputStream("cache/vanilla-" + mcVersion + ".jar").readAllBytes(),
+				new FileInputStream(patch).readAllBytes(),
+				new FileOutputStream(out)
+			);
+
+			if (!out.exists()) {
+				throw new RuntimeException("Version file was not found after patching!");
+			}
+
+			Bundler.linkedClassPathUrls.add(out.toPath().toUri().toURL());
+		} catch (IOException | CompressorException | InvalidHeaderException e) {
 			throw new RuntimeException("Unable to build patched jar!", e);
 		}
 	}
@@ -97,9 +135,5 @@ public class PatcherBuilder {
 
 			return outputFile;
 		}
-	}
-
-	public interface Getter<T> {
-		T get() throws IOException;
 	}
 }
