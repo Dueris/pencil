@@ -3,7 +3,9 @@ import io.papermc.paperweight.tasks.ExtractFromBundler
 import io.papermc.paperweight.tasks.RemapJar
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import java.io.*
+import java.io.BufferedReader
+import java.io.FileOutputStream
+import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Files
@@ -94,7 +96,7 @@ tasks.jar {
             "Main-Class" to "io.github.dueris.Bundler",
             "Bundler-Format" to "1.0",
             "Manifest-Version" to "1.0"
-            )
+        )
     }
 }
 
@@ -110,10 +112,28 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.create("createServerJar") {
+    dependsOn("shadowJar")
+    doLast {
+        val file = rootDir.resolve("build/libs/pencil-1.0-SNAPSHOT-all.jar").toPath().toFile()
+        val newFile = File(rootDir.resolve("build/libs/pencil-1.0-SNAPSHOT-all.jar").toString().replace("pencil-1.0-SNAPSHOT-all", "pencil-$MINECRAFT_VERSION-bundler"))
+
+        if (file.exists()) {
+            if (file.renameTo(newFile)) {
+                println("File renamed successfully")
+            } else {
+                println("Failed to rename file")
+            }
+        } else {
+            println("File does not exist")
+        }
+    }
+}
+
 tasks.create("initPatches") {
     doLast {
         val submodulePath = rootDir.resolve("Pencil-Server")
-        val commits = getSubmoduleCommits(submodulePath.absolutePath)
+        val commits = getSubmoduleCommits()
 
         commits.reversed().forEachIndexed { index, commit ->
             if (index == 0) return@forEachIndexed
@@ -128,17 +148,12 @@ tasks.create("genSources").dependsOn("genSource")
 tasks.create("genSource") {
     dependsOn("setupEnvironment")
     doLast {
-        // Remove old instances if there are any
-        if (!(safelyDeleteFile("./src/main/resources/META-INF/") ||
-                    safelyDeleteFile("./src/main/resources/version.json"))) {
-            throw RuntimeException("Unable to clear previous META-INF from bundler")
-        }
         moveFile("./Pencil-Server/src/main/java/META-INF", "./Pencil-Server/src/main/resources")
         moveFile("./.gradle/caches/bundler/version.json", "./src/main/resources")
         moveFile("./.gradle/caches/resources/data", "./Pencil-Server/src/main/resources")
         moveFile("./.gradle/caches/resources/assets", "./Pencil-Server/src/main/resources")
-        safelyDeleteFile("./src/main/resources/META-INF/versions")
-        safelyDeleteFile("./src/main/resources/META-INF/libraries")
+        moveFile("./.gradle/caches/resources/version.json", "./Pencil-Server/src/main/resources")
+        moveFile("./.gradle/caches/resources/flightrecorder-config.jfc", "./Pencil-Server/src/main/resources")
         safelyDeleteFile("./.gradle/caches/resources")
 
         runCommand("git|add|.", File("Pencil-Server"))
@@ -209,7 +224,10 @@ tasks.create("buildBundler") {
             throw RuntimeException("bsdiff command is required")
         }
 
-        runCommand("bsdiff|.gradle/caches/paperweight/taskCache/extractFromBundler.jar|Pencil-Server/build/libs/pencil-server-1.21.jar|patch.patch", rootDir)
+        runCommand(
+            "bsdiff|.gradle/caches/paperweight/taskCache/extractFromBundler.jar|Pencil-Server/build/libs/pencil-server-1.21.jar|patch.patch",
+            rootDir
+        )
         moveFile(rootDir.resolve("patch.patch").absolutePath, "src/main/resources/versions")
     }
 }
@@ -231,7 +249,7 @@ fun isCommandAvailable(command: String): Boolean {
     }
 }
 
-fun runDecompile(jarPath: String, toDecompile: String, outputDir : String) {
+fun runDecompile(jarPath: String, toDecompile: String, outputDir: String) {
     val processBuilder = ProcessBuilder(
         "java", "-jar", jarPath, toDecompile, outputDir
     ).redirectErrorStream(true)
@@ -280,16 +298,15 @@ fun runCommand(command: String, directory: File) {
             .redirectErrorStream(true)
             .start()
 
-        val result = process.inputStream.bufferedReader().use { it.readText() }
+        process.inputStream.bufferedReader().use { it.readText() }
         process.waitFor()
 
-        println(result)
     } catch (e: Exception) {
         throw e
     }
 }
 
-fun getSubmoduleCommits(submodulePath: String): List<String> {
+fun getSubmoduleCommits(): List<String> {
     val processBuilder = ProcessBuilder("git", "log").directory(File("./Pencil-Server/"))
     val process = processBuilder.start()
 
@@ -331,7 +348,8 @@ fun buildSourceRepo() {
     val buildGradleKtsFile = File(projectDir, "build.gradle.kts")
     val gradlePropertiesFile = File(projectDir, "gradle.properties")
 
-    gitignoreFile.writeText("""
+    gitignoreFile.writeText(
+        """
         # Ignore Gradle files
         /.gradle
         /build/
@@ -345,9 +363,11 @@ fun buildSourceRepo() {
         
         # Ignore other unnecessary files
         *.log
-        """.trimIndent())
+        """.trimIndent()
+    )
 
-    buildGradleKtsFile.writeText("""
+    buildGradleKtsFile.writeText(
+        """
         plugins {
             id("java")
             kotlin("jvm")
@@ -374,14 +394,17 @@ fun buildSourceRepo() {
         
         }
 
-        """.trimIndent())
+        """.trimIndent()
+    )
 
-    gradlePropertiesFile.writeText("""
+    gradlePropertiesFile.writeText(
+        """
         # Project properties
         org.gradle.caching=true
         org.gradle.parallel=true
         org.gradle.vfs.watch=false
-        """.trimIndent())
+        """.trimIndent()
+    )
 
     println("Subproject source successfully built")
 }

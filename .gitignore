@@ -44,4 +44,4 @@ bin/
 ### Pencil ###
 /cache/
 /test/
-/src/main/resources/versions/
+/src/main/resources/versions/patch.patch

@@ -89,7 +89,6 @@ public class PatcherBuilder {
 
 				try (InputStream inputStream = jarFile.getInputStream(entry)) {
 					Files.copy(inputStream, Paths.get("cache/vanilla-" + mcVersion + ".jar"), StandardCopyOption.REPLACE_EXISTING);
-					System.out.println("Entry extracted successfully.");
 				}
 			}
 

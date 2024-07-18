@@ -1,6 +1,6 @@
-From 9d0dc3cc2f3e3b0ddc63e285387d5b44b5dd9c8a Mon Sep 17 00:00:00 2001
+From 013c2c6ff67eb85670c1cc79cbc8d199a9e4e2d7 Mon Sep 17 00:00:00 2001
 From: dueris <jedimastertoothless@hotmail.com>
-Date: Wed, 17 Jul 2024 14:47:08 -0700
+Date: Wed, 17 Jul 2024 23:51:30 -0700
 Subject: [PATCH] Decompile Fixes
 
 ---
@@ -17,7 +17,7 @@ Subject: [PATCH] Decompile Fixes
  .../execution/tasks/BuildContexts.java        |   6 +-
  .../synchronization/ArgumentTypeInfos.java    |   8 +-
  .../synchronization/SuggestionProviders.java  |   2 +-
- .../java/net/minecraft/core/BlockPos.java     |   6 +-
+ .../java/net/minecraft/core/BlockPos.java     |  16 +--
  .../java/net/minecraft/core/HolderLookup.java |   2 +-
  .../java/net/minecraft/core/Registry.java     |  16 +--
  .../minecraft/core/RegistrySetBuilder.java    |   4 +-
@@ -192,7 +192,7 @@ Subject: [PATCH] Decompile Fixes
  .../loot/functions/SetAttributesFunction.java |   2 +-
  .../LootItemBlockStatePropertyCondition.java  |   4 +-
  .../minecraft/world/scores/Scoreboard.java    |  39 +++---
- 188 files changed, 856 insertions(+), 682 deletions(-)
+ 188 files changed, 861 insertions(+), 687 deletions(-)
 
 diff --git a/src/main/java/net/minecraft/Util.java b/src/main/java/net/minecraft/Util.java
 index 013c26e..da51490 100644
@@ -427,31 +427,42 @@ index 48cdd51..d2e29b2 100644
     }
  
 diff --git a/src/main/java/net/minecraft/core/BlockPos.java b/src/main/java/net/minecraft/core/BlockPos.java
-index 112664b..610b5c5 100644
+index 112664b..dda1609 100644
 --- a/src/main/java/net/minecraft/core/BlockPos.java
 +++ b/src/main/java/net/minecraft/core/BlockPos.java
-@@ -400,10 +400,10 @@ public class BlockPos extends Vec3i {
+@@ -400,24 +400,24 @@ public class BlockPos extends Vec3i {
     }
  
     public static Iterable<BlockPos> betweenClosed(int startX, int startY, int startZ, int endX, int endY, int endZ) {
 -      int i = endX - startX + 1;
-+      int ia = endX - startX + 1; // Pencil - decompile fix
++      int i = endX - startX + 1; // Pencil - decompile fix
        int j = endY - startY + 1;
        int k = endZ - startZ + 1;
 -      int l = i * j * k;
-+      int l = ia * j * k; // Pencil - decompile fix
++      int l = i * j * k; // Pencil - decompile fix
        return () -> new AbstractIterator<BlockPos>() {
              private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
              private int index;
-@@ -412,7 +412,7 @@ public class BlockPos extends Vec3i {
+ 
+             protected BlockPos computeNext() {
                 if (this.index == l) {
-                   return (BlockPos)this.endOfData();
+-                  return (BlockPos)this.endOfData();
++                  return this.endOfData(); // Pencil - decompile fix
                 } else {
 -                  int i = this.index % i;
-+                  int i = this.index % ia; // Pencil - decompile fix
-                   int j = this.index / i;
-                   int k = j % j;
-                   int l = j / j;
+-                  int j = this.index / i;
+-                  int k = j % j;
+-                  int l = j / j;
++               int offsetX = this.index % i; // Pencil - decompile fix
++               int u = this.index / i; // Pencil - decompile fix
++               int offsetY = u % j; // Pencil - decompile fix
++               int offsetZ = u / j; // Pencil - decompile fix
+                   this.index++;
+-                  return this.cursor.set(startX + i, startY + k, startZ + l);
++               return this.cursor.set(startX + offsetX, startY + offsetY, startZ + offsetZ); // Pencil - decompile fix
+                }
+             }
+          };
 diff --git a/src/main/java/net/minecraft/core/HolderLookup.java b/src/main/java/net/minecraft/core/HolderLookup.java
 index eab6975..0ec413f 100644
 --- a/src/main/java/net/minecraft/core/HolderLookup.java
