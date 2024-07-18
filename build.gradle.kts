@@ -112,6 +112,14 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.create("setupServer") {
+    dependsOn("createServerJar")
+    doLast {
+        moveFile(rootDir.resolve("build/libs/pencil-$MINECRAFT_VERSION-bundler.jar").absolutePath, "test")
+        runCommand("java|-jar|pencil-$MINECRAFT_VERSION-bundler.jar", File("test"))
+    }
+}
+
 tasks.create("createServerJar") {
     dependsOn("shadowJar")
     doLast {
@@ -119,11 +127,7 @@ tasks.create("createServerJar") {
         val newFile = File(rootDir.resolve("build/libs/pencil-1.0-SNAPSHOT-all.jar").toString().replace("pencil-1.0-SNAPSHOT-all", "pencil-$MINECRAFT_VERSION-bundler"))
 
         if (file.exists()) {
-            if (file.renameTo(newFile)) {
-                println("File renamed successfully")
-            } else {
-                println("Failed to rename file")
-            }
+            file.renameTo(newFile)
         } else {
             println("File does not exist")
         }
