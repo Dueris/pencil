@@ -1,9 +1,9 @@
+import io.papermc.paperweight.tasks.DownloadServerJar
+import io.papermc.paperweight.tasks.ExtractFromBundler
 import io.papermc.paperweight.tasks.RemapJar
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import java.io.BufferedReader
-import java.io.FileOutputStream
-import java.io.InputStreamReader
+import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Files
@@ -80,15 +80,23 @@ subprojects {
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    implementation("net.fabricmc:tiny-remapper:0.10.4")
+    api("net.fabricmc:tiny-remapper:0.10.4")
+    api("org.vineflower:vineflower:1.10.1")
+    api("org.jetbrains.kotlin:kotlin-stdlib")
 
     paramMappings("net.fabricmc:yarn:1.21+build.1:mergedv2")
     remapper("net.fabricmc:tiny-remapper:0.10.3:fat")
-    paperclip("io.papermc:paperclip:3.0.3")
-    implementation("org.vineflower:vineflower:1.10.1")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib")
+
+}
+
+tasks.jar {
+    manifest {
+        attributes(
+            "Main-Class" to "io.github.dueris.Bundler",
+            "Bundler-Format" to "1.0",
+            "Manifest-Version" to "1.0"
+            )
+    }
 }
 
 paperweight {
@@ -121,7 +129,18 @@ tasks.create("genSources").dependsOn("genSource")
 tasks.create("genSource") {
     dependsOn("setupEnvironment")
     doLast {
+        // Remove old instances if there are any
+        if (!(safelyDeleteFile("./src/main/resources/META-INF/") ||
+                    safelyDeleteFile("./src/main/resources/version.json"))) {
+            throw RuntimeException("Unable to clear previous META-INF from bundler")
+        }
         moveFile("./Pencil-Server/src/main/java/META-INF", "./Pencil-Server/src/main/resources")
+        moveFile("./.gradle/caches/bundler/META-INF", "./src/main/resources")
+        moveFile("./.gradle/caches/bundler/version.json", "./src/main/resources")
+        moveFile("./.gradle/caches/resources/data", "./Pencil-Server/src/main/resources")
+        moveFile("./.gradle/caches/resources/assets", "./Pencil-Server/src/main/resources")
+        safelyDeleteFile("./src/main/resources/META-INF/versions")
+        safelyDeleteFile("./.gradle/caches/resources")
 
         runCommand("git|add|.", File("Pencil-Server"))
         runCommand("git|commit|-m|Initial Source", File("Pencil-Server"))
@@ -158,33 +177,97 @@ tasks.create("setupEnvironment") {
         stopWatch.start()
 
         val remapJarTask = tasks.getByName<RemapJar>("remapJar")
+        val downloadServerJarTask = tasks.getByName<DownloadServerJar>("downloadServerJar")
         val jarFile = File(
             remapJarTask.outputJar.asFile.get().parentFile.parentFile.parentFile.resolve("decompiler")
                 .resolve("decompiler.jar").absolutePath
         )
 
-        val processBuilder = ProcessBuilder(
-            "java",
-            "-jar",
-            jarFile.absolutePath,
-            "${remapJarTask.outputJar.asFile.get()}",
-            "./Pencil-Server/src/main/java/"
-        )
-            .redirectErrorStream(true)
-        val process = processBuilder.start()
+        val jarFilePath = jarFile.absolutePath
+        val remapJarOutput = remapJarTask.outputJar.asFile.get().absolutePath
+        val downloadServerJarOutput = downloadServerJarTask.outputJar.asFile.get().absolutePath
+        val extractFromBundlerOutput = tasks.getByName<ExtractFromBundler>("extractFromBundler").serverJar
 
-        process.inputStream.bufferedReader().useLines { lines ->
-            lines.forEach { line ->
-                println(line)
-            }
-        }
+        runDecompile(jarFilePath, remapJarOutput, "./Pencil-Server/src/main/java/")
+        runDecompile(jarFilePath, downloadServerJarOutput, "./.gradle/caches/bundler")
+        runDecompile(jarFilePath, extractFromBundlerOutput.asFile.get().absolutePath, "./.gradle/caches/resources")
 
-        val exitCode = process.waitFor()
-        println("Process exited with code: $exitCode")
         stopWatch.stop()
         println()
         println("Finished decompile in ${stopWatch.elapsedTime} ms")
         buildSourceRepo()
+
+        if (!isCommandAvailable("bsdiff")) else {
+            throw RuntimeException("bsdiff command is required")
+        }
+    }
+}
+
+tasks.create("buildBundler") {
+    dependsOn(":pencil-server:build")
+    doLast {
+        if (!isCommandAvailable("bsdiff")) else {
+            throw RuntimeException("bsdiff command is required")
+        }
+
+        runCommand("bsdiff|.gradle/caches/paperweight/taskCache/extractFromBundler.jar|Pencil-Server/build/libs/pencil-server-1.21.jar|patch.patch", rootDir)
+        moveFile(rootDir.resolve("patch.patch").absolutePath, "src/main/resources/versions")
+    }
+}
+
+tasks.processResources {
+    dependsOn("buildBundler")
+}
+
+fun isCommandAvailable(command: String): Boolean {
+    return try {
+        val process = ProcessBuilder(command)
+            .redirectOutput(ProcessBuilder.Redirect.PIPE)
+            .redirectError(ProcessBuilder.Redirect.PIPE)
+            .start()
+        process.waitFor()
+        process.exitValue() == 0
+    } catch (e: Exception) {
+        false
+    }
+}
+
+fun runDecompile(jarPath: String, toDecompile: String, outputDir : String) {
+    val processBuilder = ProcessBuilder(
+        "java", "-jar", jarPath, toDecompile, outputDir
+    ).redirectErrorStream(true)
+
+    val process = processBuilder.start()
+
+    process.inputStream.bufferedReader().useLines { lines ->
+        lines.forEach { println(it) }
+    }
+
+    process.waitFor()
+}
+
+fun safelyDeleteFile(filePath: String): Boolean {
+    val file = File(filePath)
+    return try {
+        if (file.exists()) {
+            deleteRecursively(file)
+        } else true
+    } catch (e: Exception) {
+        println("An error occurred while trying to delete the file: ${e.message}")
+        false
+    }
+}
+
+private fun deleteRecursively(file: File): Boolean {
+    return if (file.isDirectory) {
+        file.listFiles()?.forEach { child ->
+            if (!deleteRecursively(child)) {
+                return false
+            }
+        }
+        file.delete()
+    } else {
+        file.delete()
     }
 }
 

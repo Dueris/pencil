@@ -43,4 +43,6 @@ bin/
 
 ### Pencil ###
 /cache/
-/Pencil-Server/
+src/main/resources/META-INF
+src/main/resources/version.json
+/test/
