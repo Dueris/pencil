@@ -1,0 +1,23 @@
+{
+  "name": "Test Plugin",
+  "description": "A test plugin for the pencil server fork of Minecraft",
+  "loaders": {
+    "post-init": "io.github.dueris.TestPlugin",
+    "bootstrap": "io.github.dueris.Bootstrap",
+    "bundler-boot": ""
+  },
+  "modid": "testplugin",
+  "breaks": [
+    "plugin a",
+    "plugin b"
+  ],
+  "depends": [
+    "plugin c"
+  ],
+  "libraries": [
+    {
+      "repository": "https://repo1.maven.org/maven2",
+      "dependency": "com.google.guava:guava:33.2.1-jre"
+    }
+  ]
+}

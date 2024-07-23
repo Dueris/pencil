@@ -9,7 +9,6 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Files
-import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
 val MINECRAFT_VERSION = "1.21"
@@ -83,11 +82,12 @@ subprojects {
 }
 
 dependencies {
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.2")
     api("io.sigpipe:jbsdiff:1.0")
+    api("com.google.code.gson:gson:2.10.1")
 
     paramMappings("net.fabricmc:yarn:1.21+build.1:mergedv2")
     remapper("net.fabricmc:tiny-remapper:0.10.3:fat")
-
 }
 
 tasks.jar {
@@ -395,6 +395,7 @@ fun buildSourceRepo() {
             implementation("org.jetbrains:annotations:24.0.0")
             implementation("jakarta.annotation:jakarta.annotation-api:3.0.0")
             implementation("com.google.code.findbugs:jsr305:3.0.2")
+            implementation(project("::"))
         
         }
 

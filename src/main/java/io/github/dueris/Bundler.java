@@ -20,7 +20,7 @@ public class Bundler {
 
 	private void run(String[] argv) {
 		try {
-			String defaultMainClassName = this.readResource("main-class", BufferedReader::readLine);
+			String defaultMainClassName = this.readMainClass(BufferedReader::readLine);
 			String mainClassName = System.getProperty("bundlerMainClass", defaultMainClassName);
 			String repoDir = System.getProperty("bundlerRepoDir", "");
 			Path outputDir = Paths.get(repoDir);
@@ -44,6 +44,7 @@ public class Bundler {
 
 				return jsonContent.split("\"id\": \"")[1].split("\"")[0];
 			};
+			new ModLoader().start(versionProvider);
 			new PatcherBuilder().start(versionProvider);
 			new LibraryLoader().start(versionProvider);
 			if (mainClassName == null || mainClassName.isEmpty()) {
@@ -71,10 +72,10 @@ public class Bundler {
 		}
 	}
 
-	private <T> T readResource(String resource, Bundler.ResourceParser<T> parser) throws Exception {
-		String fullPath = "/META-INF/" + resource;
+	private <T> T readMainClass(ResourceParser<T> parser) throws Exception {
+		String fullPath = "/META-INF/main-class";
 
-		Object var5;
+		T var5;
 		try (InputStream is = this.getClass().getResourceAsStream(fullPath)) {
 			if (is == null) {
 				throw new IllegalStateException("Resource " + fullPath + " not found");
@@ -83,7 +84,7 @@ public class Bundler {
 			var5 = parser.parse(new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)));
 		}
 
-		return (T)var5;
+		return var5;
 	}
 
 	@FunctionalInterface

@@ -1,7 +1,7 @@
 import java.util.*
 
 rootProject.name = "pencil"
-for (name in listOf("Pencil-Server", "patcher")) {
+for (name in listOf("Pencil-Server", "plugin")) {
     val projName = name.lowercase(Locale.ENGLISH)
     include(projName)
     findProject(":$projName")!!.projectDir = file(name)
