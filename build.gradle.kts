@@ -222,7 +222,7 @@ tasks.create("setupEnvironment") {
 }
 
 tasks.create("buildBundler") {
-    dependsOn(":pencil-server:build")
+    //dependsOn(":pencil-server:build")
     doLast {
         if (!isCommandAvailable("bsdiff")) else {
             throw RuntimeException("bsdiff command is required")
